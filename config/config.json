@@ -1,0 +1,8 @@
+{
+	"AppserverUrl"      		: "APPSERVERDC://192.168.56.101:4090",
+	"AppserverUserName" 		: "",
+	"AppserverUserPassword" 	: "",
+	"AppserverSessionModel"     : "State-less",
+	"WinstoneSvrPort"           : 8085
+}
+
