@@ -3,6 +3,6 @@
 	"AppserverUserName" 		: "",
 	"AppserverUserPassword" 	: "",
 	"AppserverSessionModel"     : "State-less",
-	"WinstoneSvrPort"           : 8085
+	"WinstoneSvrPort"           : 8087
 }
 
