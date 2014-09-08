@@ -7,6 +7,7 @@ var async		= require("async"),
 	sleep       = require("sleep");
 */
 var http        = require("http"),
+	moment		= require("moment"),
     numeral     = require('numeral');
 
 //dynCallPromise -> promise object for dynamic call requests
@@ -32,7 +33,7 @@ dynCallPromise.prototype.executeAppCall = function(){
 		if(err & err!==null){
 			that.callback(err,null);
 		}else{
-			that.node4progress.httpPost(dynCallStr, "application/json","callAppsvrProc", that.callback);
+			that.node4progress.httpPost( dynCallStr, that.callback );
 		}
 	});			
 };
@@ -55,7 +56,7 @@ datasetPromise.prototype.executeRequest = function(){
 		if(err & err!==null){
 			that.callback(err,null);
 		}else{
-			that.node4progress.httpPost(dynCallStr, "application/json","callAppsvrProc", that.callback);
+			that.node4progress.httpPost( dynCallStr, that.callback );
 		}
 	});			
 };
@@ -224,41 +225,20 @@ TempTable.prototype.bufferCreate = function(){
 };
 TempTable.prototype.initial = function(iDataType,iValue){
 	var value=null;
-	var dt=null;
-	var month="";
-	var day="";	
-	var year="";	
 	if(iDataType.toLowerCase()==="integer"||iDataType.toLowerCase()==="decimal"){
 		value=Number(iValue.replace(",",""));
 	}else if(iDataType.toLowerCase()==="date"){
 		if(iValue==="today"){
-			dt = new Date();
-			year=dt.getFullYear();
-			month=(dt.getMonth()+1);
-			day=dt.getDate();
-			if(month.length<2){month="0"+month;}
-			if(day.length<2){day="0"+day;}
-			value=year + "-"+ month + "-" + day;
+			value	= moment().format( "YYYY-MM-DD" );
 		}else{
-			dtArray=iValue.split("/");
-			if(dtArray.length===3){
-				month=dtArray[0];
-				day=dtArray[1];
-				year=dtArray[2];
-				if(year.length==2){year="20"+year;}
-				if(month.length<2){month="0"+month;}
-				if(day.length<2){day="0"+day;}	
-				value=year + "-"+ month + "-" + day;
-			}else{
-				value=iValue;
-			}
+			value	= moment( iValue ).format( "YYYY-MM-DD" );
 		}
 	}else{
 		value=iValue.toString();
 	}
 	return value;
 };
-TempTable.prototype.writeJson = function(){
+TempTable.prototype.writeJson = function(){ 
 	writeJson='{ "'+this.name+'":'+JSON.stringify(this.records) + "}";
 	return writeJson;
 };
@@ -328,62 +308,62 @@ BufferField.prototype.setCurrenBufferField  = function(iName,iCurrentRecord,iFie
 };
 BufferField.prototype.$ = function(iAttribute){
 	var attrVal="";
-	if(iAttribute.toLowerCase()=="buffervalue" ||
-		iAttribute.toLowerCase()=="buffer-value"){
-	   	if(this.dataType.toLowerCase() === "date"){
-    		var dateArr=this.value.split("-");
-    		if(dateArr.length==3){
-    			attrVal=new Date(dateArr[0],dateArr[1],dateArr[0]);
-    		}
-    	}		
-    }else if(iAttribute.toLowerCase()=="value"){
-    	if(this.dataType.toLowerCase()=="date"){
-    		attrVal=this.formattedValueDate();
-    	}else{
-    		attrVal=this.value;
-    	}
-    }else if(iAttribute.toLowerCase()=="format"){attrVal=this.format;}
-    else if(iAttribute.toLowerCase()=="initial"){attrVal=this.initial;}
-    else if(iAttribute.toLowerCase()=="label"){attrVal=this.label;}
-    else if(iAttribute.toLowerCase()=="datatype"||
-    		iAttribute.toLowerCase()=="data-type"){attrVal=this.dataType;}
-    else if(iAttribute.toLowerCase()=="screenvalue"){
-    	attrVal=this.formattedValue();
-    }
-    else {
-    	throw new Error("Invalid buffer field attribute of '"+iAttribute+"' requested");
-    }
+	
+	switch ( iAttribute.toLowerCase() ) {
+		case "buffervalue":
+		case "buffer-value":
+		   	if(this.dataType.toLowerCase() === "date"){
+		   		attrVal		= moment( this.value ).toDate();
+	    	}
+	    	break;
+	    	
+	    case "value":
+	    	if(this.dataType.toLowerCase()=="date"){
+	    		attrVal=this.formattedValueDate();
+	    	}else{
+	    		attrVal=this.value;
+	    	}
+	    	break;
+			
+		case "format":
+			attrVal		= this.format;
+			break;
+			
+		case "initial":
+			attrVal		= this.initial;
+			break;
+
+		case "label":
+			attrVal		= this.label;
+			break;
+			
+		case "datatype":
+		case "data-type":
+			attrVal		= this.dataType;
+			break;
+			
+		case "screenvalue":
+			attrVal		= this.formattedValue();
+			break;
+			
+		default:
+			throw new Error("Invalid buffer field attribute of '"+iAttribute+"' requested");
+			break;
+	}
+
     return attrVal;
 };
+
 BufferField.prototype.bufferValue = function(iValue){
 	var day="";
 	var month="";
-	if(this.dataType.toLowerCase()==="date"){
-		if(typeof iValue === "string"){
-			dateArr=iValue.split("/");
-			if(dateArr.length==3){
-				if(dateArr[0].length<2){
-					dateArr[0] = "0"+dateArr[0];
-				}
-				if(dateArr[1].length<2){
-					dateArr[1] = "0"+dateArr[1];
-				}				
-				if(dateArr[2].length==2){
-					dateArr[2]+="20"+dateArr[2];
-				}
-				this.currentRecord[this.name]=dateArr[2]+"/"+dateArr[1]+"/"+dateArr[0];
-			}
-		}else if(iValue instanceof Date){
-			month=(iValue.getMonth()+1);
-			if(month.length<2){month="0"+month;}
-			day=iValue.getDate();
-			if(day.length<2){day="0"+day;}
-			this.currentRecord[this.name]=iValue.getFullYear()+"-"+month+"-"+day;
-		}
+	if( this.dataType.toLowerCase() === "date" ){
+		this.currentRecord[this.name]		= moment( iValue ).format( "MM/DD/YYYY" );
 	}else{
 		this.currentRecord[this.name] = iValue;
 	}
 };
+
 BufferField.prototype.setAttr = function(iAttrNm,iValue){
 	if(iAttrNm.toLowerCase() === "format"){
 		this.metaSchema["format"]=iValue;
@@ -393,28 +373,40 @@ BufferField.prototype.setAttr = function(iAttrNm,iValue){
 };
 
 BufferField.prototype.formattedValue = function(){
-    var length=0;
-    var formattedValue=this.value;
-	var i = 0;
-	if(this.dataType.toLocaleLowerCase()=="character"){
-		if(this.format.substring(1,2)=="("){
-			length=this.format.substring(2,this.format.length-1);
-		} else{
-			length=this.format.length;
-		}	
-		if(length<this.value.length){
-			formattedValue=this.value.substring(0, length);
-		}else{
-			for(i=this.value.length;i<length;i++){
-				formattedValue+=" ";
+	var formattedValue,
+		length,
+		i;
+	
+	switch ( this.dataType.toLocaleLowerCase() ) {
+		case "character":
+			if(this.format.substring(1,2)=="("){
+				length=this.format.substring(2,this.format.length-1);
+			} else{
+				length=this.format.length;
+			}	
+			if(length<this.value.length){
+				formattedValue=this.value.substring(0, length);
+			}else{
+				for(i=this.value.length;i<length;i++){
+					formattedValue+=" ";
+				}
 			}
-		}
-	} else if(this.dataType.toLocaleLowerCase()=="integer" ||
-			this.dataType.toLocaleLowerCase()=="decimal"){
-		formattedValue=this.formattedValueNumber();
-	} else if(this.dataType.toLocaleLowerCase()=="date"){
-		formattedValue=this.formattedValueDate();
-	}	
+			break;
+			
+		case "integer":
+		case "decimal":
+			formattedValue=this.formattedValueNumber();
+			break;
+			
+		case "date":
+			formattedValue=this.formattedValueDate();
+			break;
+			
+		default:
+	    	formattedValue=this.value;
+	    	break;
+	}
+	
     return formattedValue;
 };
 BufferField.prototype.formattedValueNumber = function(){
@@ -521,39 +513,10 @@ BufferField.prototype.formattedValueNumber2 = function(){
 	
 };
 BufferField.prototype.formattedValueDate = function(){
-	var day = "";
-	var month = "";
-	var year = "";
-	var formattedValue = "";
-	if(typeof this.value === "string"){
-		/*.. format now is yyyy-mm-dd .......*/
-		var dateArray = this.value.split("-");
-		if(dateArray.length === 3){
-			if(dateArray[1].length<2){dateArray[1]="0"+dateArray[1];}
-			if(dateArray[2].length<2){dateArray[2]="0"+dateArray[2];}
-			formattedValue = dateArray[1] + "/" + dateArray[2] + "/";
-			if(this.format === "99/99/99"){
-				formattedValue+=dateArray[0].substring(2,4);
-			}else{
-				formattedValue+=dateArray[0];
-			}			
-		}
-	} else if(this.value instanceof "Date"){
-		month = this.value.getMonth() + 1;
-		if(month.length < 2){month = "0" + month;}
-		day=this.value.getDate();
-		if(day.length < 2){day = "0" + day;}
-		year=this.value.getFullYear();
-		if(this.format === "99/99/99"){
-			formattedValue=month + "/" + day + "/" + year.substring(2, 4);
-		}else if(this.format === "99/99/9999"){
-			formattedValue=month + "/" + day + "/" + year;
-		}
-	}
-	return formattedValue;
+	return formattedValue		= moment( this.value ).format( (this.format == "99/99/99") ? "DD/MM/YY" : "DD/MM/YYYY" );
 };
 
-function node4progressHttp(conf) {
+function node4progress(conf) {
 	var that = this;
 	if(conf !== null){
        this.conf = conf;
@@ -578,7 +541,7 @@ function node4progressHttp(conf) {
 	
 }
 
-node4progressHttp.prototype.startWinstone = function(){
+node4progress.prototype.startWinstone = function(){
 	//this.env = process.env;
 	var that = this;
 	this.env.appserverUrl = this.appserverUrl;
@@ -627,24 +590,24 @@ node4progressHttp.prototype.startWinstone = function(){
           that.winstone.kill('SIGHUP');
 	});			
 };
-node4progressHttp.prototype.handler = function(){
+node4progress.prototype.handler = function(){
 	return new handlerCallPromise(this);
 };
 
-node4progressHttp.prototype.callHandler	= function( iHandler, iInputParameters, callback ){
+node4progress.prototype.callHandler	= function( iHandler, iInputParameters, callback ){
 	var post_data = iHandler + "|" + iInputParameters;
 	this.httpPost(post_data, "text/plain", "CallHandler", callback);
 };
 
-node4progressHttp.prototype.httpPost = function(post_data,content_type,callMethod,callback) {
+node4progress.prototype.httpPost = function( post_data, callback ) {
       // An object of options to indicate where to post to
       var post_options = {
           host: 'localhost',
           port: this.winstoneSvrPort,
-          path: '/TurboNode?' + callMethod,
+          path: '/TurboNode?callAppsvrProc',
           method: 'POST',
           headers: {
-              'Content-Type': content_type,
+              'Content-Type':	"application/json;charset=UTF-8",
               'Content-Length': post_data.length
           }
       };
@@ -664,10 +627,10 @@ node4progressHttp.prototype.httpPost = function(post_data,content_type,callMetho
       post_req.write(post_data);
       post_req.end();
 };
-node4progressHttp.prototype.stopWinstone = function(callback){
+node4progress.prototype.stopWinstone = function(callback){
 	this.httpPost("","text/plain","stop",callback);
 };
-node4progressHttp.prototype.setAppsvrProc = function(iProcName,iInternalProcName,iIsPersistent,iIncludeMetaSchemna){
+node4progress.prototype.setAppsvrProc = function(iProcName,iInternalProcName,iIsPersistent,iIncludeMetaSchemna){
 	this.dynCall = {
 		dsCallStack:	{
 			ttCallProgram:		[],
@@ -684,28 +647,32 @@ node4progressHttp.prototype.setAppsvrProc = function(iProcName,iInternalProcName
 	);
 };
 
-node4progressHttp.prototype.setParameter = function(parName,parDataType,parIoMode,parValue,SchemaProvider){
+node4progress.prototype.setParameter = function(parName,parDataType,parIoMode,parValue,SchemaProvider){
 	this.dynCall.dsCallStack.ttCallParameter.push( {
-			parIndex: this.dynCall.dsCallStack.ttCallParameter.length + 1,
-			parDataType : parDataType,
-			parIoMode : parIoMode,
-			parName : parName,
-			parValue : parValue,
-			SchemaProvider : SchemaProvider
+		parIndex: 		this.dynCall.dsCallStack.ttCallParameter.length + 1,
+		parDataType:	parDataType,
+		parIoMode:		parIoMode,
+		parName:		parName,
+		parValue:		parValue,
+		SchemaProvider: SchemaProvider
 	});	
 };
-node4progressHttp.prototype.appProc = function(){
+node4progress.prototype.setPar = function( elm ) {
+	elm.parIndex	= this.dynCall.dsCallStack.ttCallParameter.length + 1;
+	this.dynCall.dsCallStack.ttCallParameter.push( elm );	
+};
+node4progress.prototype.appProc = function(){
 	var dynCallStr = JSON.stringify(this.dynCall);
 	return new dynCallPromise(this,dynCallStr);
 };
 
-node4progressHttp.prototype.invoke = function(callback){
+node4progress.prototype.invoke = function(callback){
 	var dynCallStr = JSON.stringify(this.dynCall);
 	var appCall = new dynCallPromise(this,dynCallStr);
 	appCall.execute(callback);
 };
 
-node4progressHttp.prototype.getEmptyDataset = function(iDatasetNm,iDatasetProvider,callback){
+node4progress.prototype.getEmptyDataset = function(iDatasetNm,iDatasetProvider,callback){
 	var that=this;
 	var dataset=null;
 	this.setAppsvrProc("getSchema","",false,true);
@@ -726,8 +693,8 @@ node4progressHttp.prototype.getEmptyDataset = function(iDatasetNm,iDatasetProvid
 	dsPromise.execute();
 };
 
-node4progressHttp.prototype.prepareAppsvrCall = function(dsCallStack,callback){
-    //var callParameter=null;
+node4progress.prototype.prepareAppsvrCall = function(dsCallStack,callback){
+    //var callParameter=null; 
     //var i=0;
 	var j=0;
 	var k=0;
@@ -772,7 +739,7 @@ node4progressHttp.prototype.prepareAppsvrCall = function(dsCallStack,callback){
 	}
 	callback(errObj,JSON.stringify(dsCallStack));
 };
-node4progressHttp.prototype.getDataset = function(iDsName,iDynCallJson){
+node4progress.prototype.getDataset = function(iDsName,iDynCallJson){
 	if(typeof iDynCallJson == "string"){
 		iDynCallJson=JSON.parse(iDynCallJson);
 	}
@@ -781,5 +748,5 @@ node4progressHttp.prototype.getDataset = function(iDsName,iDynCallJson){
 }
 //export a new instance to the interface per call
 module.exports	= function(conf) {
-	return new node4progressHttp(conf);
+	return new node4progress(conf);
 };
