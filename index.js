@@ -60,6 +60,29 @@ datasetPromise.prototype.executeRequest = function(){
 	});			
 };
 
+function tempTablePromise(iNode4Progress,iDyncallJsonStr,iCallback){
+	this.node4progress=iNode4Progress;
+	this.dynCallJsonStr=iDyncallJsonStr;
+	this.callback=iCallback;
+}
+tempTablePromise.prototype.execute = function(){
+	if(this.node4progress.winstoneStarted === true){
+		this.executeRequest();
+	} else {
+		this.node4progress.tempTablePromises.push(this);
+	}	
+};
+tempTablePromise.prototype.executeRequest = function(){
+	var that = this;
+	this.node4progress.prepareAppsvrCall(this.dynCallJsonStr,function(err,dynCallStr){		
+		if(err & err!==null){
+			that.callback(err,null);
+		}else{
+			that.node4progress.httpPost(dynCallStr, "application/json","callAppsvrProc", that.callback);
+		}
+	});			
+};
+
 function handlerCallPromise(iNode4Progress){
 	this.node4progress=iNode4Progress;
 	this.handler = null;
@@ -94,6 +117,7 @@ function Dataset(iDatasetNm,iJsonObj){
 	this.metaSchema=null;
 	this.name = "";
 	this.rootName="";
+	this.tempTables={};
 	this.getDataset(iDatasetNm,iJsonObj);
 	if(this.name == ""){
 		throw new Error("Dataset "+iDatasetNm+" not found");
@@ -116,21 +140,25 @@ Dataset.prototype.$ = function(ttName){
 			break;
 		}
 	}
-	return new TempTable(this,ttNm,targetTable,this.metaSchema[ttNm]);
+	if(! this.tempTables[ttNm]){
+		this.tempTables[ttNm]=new TempTable(this,ttNm,targetTable,this.metaSchema[ttNm]);
+	}
+	return this.tempTables[ttNm];
 };
 Dataset.prototype.copyDataset = function(empty){
 	var copyDatasetJsonObj = {};
-	copyDatasetJsonObj[this.name] = JSON.parse(this.writeJson());	
-    copyDatasetJsonObj[this.name+"MetaSchema"] = JSON.parse(JSON.stringify(this.metaSchema));
+	copyDatasetJsonObj[this.rootName] = JSON.parse(this.writeJson());	
+    copyDatasetJsonObj[this.rootName][this.name+"MetaSchema"] = JSON.parse(JSON.stringify(this.metaSchema));
     copyDataset = new Dataset(this.name,copyDatasetJsonObj);
 	if(empty === true){
 		copyDataset.emptyDataset();		
 	}
+//console.log("copyDatasetJsonObj===>\n"+JSON.stringify(copyDatasetJsonObj)+"\n======>");    	
 	return copyDataset;
 };
 Dataset.prototype.emptyDataset = function(){
 	for(var prop in this.dataset[this.rootName]){
-		this.$(prop).emptyTemptable();
+		this.$(prop).emptyTempTable();
 	}
 };
 Dataset.prototype.getDataset = function(iDatasetNm,iJsonObj){
@@ -148,21 +176,6 @@ Dataset.prototype.getDataset = function(iDatasetNm,iJsonObj){
 			}
 			break;
 		}						
-		/*
-		if(iDatasetNm.toLowerCase() == prop.toString().toLowerCase()){
-			if(iJsonObj[prop+"MetaSchema"]){			
-				//this.dataset=iJsonObj[prop];
-				this.dataset=iJsonObj;
-				this.metaSchema=iJsonObj[prop+"MetaSchema"];
-				this.name=prop.toString();
-				for(prop2 in this.dataset){
-					this.rootName=prop2;
-					break;
-				}
-				break;
-			}			
-		}
-*/
 		if(typeof iJsonObj[prop] == "object"){
 			this.getDataset(iDatasetNm,iJsonObj[prop]);
 		}
@@ -171,44 +184,32 @@ Dataset.prototype.getDataset = function(iDatasetNm,iJsonObj){
 Dataset.prototype.writeJson = function(){
 	var writeJson="";
 	if(this.dataset){
-		writeJson=JSON.stringify(this.dataset);
+		var jsonObj={};
+		jsonObj[this.rootName]=this.dataset[this.rootName];		
+		writeJson=JSON.stringify(jsonObj);
 	}
 	return writeJson;
 };
 function TempTable(iDataset,iName,ttRecordArray,iMetaSchema){
-	this.dataset=iDataset.dataset;
+	this.dataset=null;
+	if(iDataset){
+       this.dataset=iDataset.dataset;
+	}
 	this.records=ttRecordArray;
 	this.name=iName;
 	this.metaSchema=iMetaSchema;
+	this.currentRecord={};
+	this.currentRecordIndex=-1;
 	this.buffer = new Buffer(this,this.metaSchema);
 }
-TempTable.prototype.emptyTemptable = function(){
-	if(this.records){
-		while(this.records.length>0){
-			this.records.splice();
-		}
+TempTable.prototype.available = function(){
+	var avail=false;	
+	if(this.currentRecordIndex>=0){
+		avail=true;
 	}
+	return avail;
 };
 
-TempTable.prototype.forEach = function(callback){
-	var that = this;
-	this.records.forEach(function(currentRecord){
-		that.buffer.setCurrentRecord(currentRecord);
-		callback(that.buffer);
-	});
-};
-TempTable.prototype.findFirst = function(){
-	if(this.records.length>0){
-		this.buffer.setCurrentRecord(this.records[0]);
-	}
-	return this.buffer;
-};
-TempTable.prototype.findLast = function(){
-	if(this.records.length>0){
-		this.buffer.setCurrentRecord(this.records[this.records.length-1]);
-	}
-	return this.buffer;
-};
 TempTable.prototype.bufferCreate = function(){
 	var newRecord = {};
 	var fieldDefs = null;
@@ -219,7 +220,90 @@ TempTable.prototype.bufferCreate = function(){
 		newRecord[prop]=value;		
 	}
 	this.records.push(newRecord);
+	this.currentRecordIndex=this.records.length-1;
 	this.buffer.setCurrentRecord(this.records[this.records.length-1]);
+	return this.buffer;
+};
+TempTable.prototype.bufferCopy = function(iRecordJson){
+	if(this.currentRecordIndex >=0){
+		if(typeof iRecordJson === "string"){
+			iRecordJson=JSON.parse(iRecordJson);
+		}
+		if(typeof iRecordJson === "object"){
+		   for(var prop in iRecordJson){
+			   if(this.buffer.$(prop)){
+				   this.buffer.$(prop).bufferValue(iRecordJson[prop]);
+			   }
+		   }
+		}		
+	}else{
+		throw new Error("No record selected to bufferCopy to");
+	}
+};
+TempTable.prototype.bufferDelete = function(){
+	var deletedRecordJson=null;
+	if(this.currentRecordIndex>=0){
+		deletedRecordJson=this.records.splice(this.currentRecordIndex);
+	}
+	if(this.records.length === 0){
+		this.currentRecordIndex=-1;
+	}else if(this.currentRecordIndex> this.records.length-1){
+		this.records.length=this.records.length-1;
+	}
+	return deletedRecordJson[0];
+};
+
+TempTable.prototype.copyTempTable = function(empty){
+	var copyTempTableJsonObj = {};
+	copyTempTableJsonObj[this.name] = this.records;	
+    copyTempTableJsonObj.metaSchema = this.metaSchema;
+	var copyTempTableStr = JSON.stringify(copyTempTableJsonObj);
+	copyTempTableJsonObj = JSON.parse(copyTempTableStr);
+    var copyTempTable = new TempTable(null,this.name,copyTempTableJsonObj[this.name],copyTempTableJsonObj.metaSchema);
+    if(empty === true){
+        copyTempTable.emptyTempTable();		
+	}
+	return copyTempTable;
+};
+
+TempTable.prototype.emptyTempTable = function(){
+	if(this.records){
+		while(this.records.length>0){
+			this.records.splice(0);
+		}
+	}
+	this.currentRecordIndex=-1;
+};
+TempTable.prototype.forEach = function(callback){
+	var that = this;
+	for(var i=0;i<this.records.length;i++){
+		this.currentRecordIndex=i;
+		that.buffer.setCurrentRecord(this.records[i]);
+		callback(that.buffer);		
+	}
+	/*
+	this.records.forEach(function(currentRecord){
+		that.buffer.setCurrentRecord(currentRecord);
+		callback(that.buffer);
+	});
+	*/
+};
+TempTable.prototype.findFirst = function(){
+	if(this.records.length>0){
+		this.currentRecordIndex=0;
+		this.buffer.setCurrentRecord(this.records[0]);
+	}else{
+		this.currentRecordIndex=-1;
+	}
+	return this.buffer;
+};
+TempTable.prototype.findLast = function(){
+	if(this.records.length>0){
+		this.currentRecordIndex=this.records.length-1;
+		this.buffer.setCurrentRecord(this.records[this.records.length-1]);
+	}else {
+		this.currentRecordIndex=-1;
+	}
 	return this.buffer;
 };
 TempTable.prototype.initial = function(iDataType,iValue){
@@ -553,6 +637,73 @@ BufferField.prototype.formattedValueDate = function(){
 	return formattedValue;
 };
 
+BufferField.prototype.formattedValueDateTime = function(){
+	var day = "";
+	var month = "";
+	var year = "";
+	var formattedValue = "";
+	var valueTimeRemainder = "";
+	var formatTimeRemainder = "";
+	var amPm ="" ;
+	var miliSeconds = "";
+	if(typeof this.value === "string"){
+		/*.. the stored format now is YYYY-MM-DDTHH:MM:SS.sss .......*/
+		if(this.format.length>=10 && this.value.length>=10){
+			var dateArray = this.value.substring(0,10).split("-");
+			if(dateArray.length === 3){
+				if(dateArray[1].length<2){dateArray[1]="0"+dateArray[1];}
+				if(dateArray[2].length<2){dateArray[2]="0"+dateArray[2];}
+				if(this.format.substring(0,10)==="99/99/9999"){
+					formattedValue = dateArray[1] + "/" + dateArray[2] + "/" + dateArray[0];
+					valueTimeRemainder=this.value.substring(11,this.format.length);
+					formatTimeRemainder=this.format.substring(11,this.format.length);					
+				} else if(this.format.substring(0,10)==="99/99/99"){
+					formattedValue = dateArray[1] + "/" + dateArray[2] + "/" + dateArray[0].substring(2,4);
+					valueTimeRemainder=this.value.substring(9,this.format.length);
+					formatTimeRemainder=this.format.substring(9,this.format.length);
+				} else if(this.format.substring(0,10)==="99-99-9999"){
+					formattedValue = dateArray[1] + "-" + dateArray[2] + "-" + dateArray[0];					
+					valueTimeRemainder=this.value.substring(11,this.format.length);
+					formatTimeRemainder=this.format.substring(11,this.format.length);
+				} else if(this.format.substring(0,10)==="99-99-99"){
+					formattedValue = dateArray[1] + "-" + dateArray[2] + "-" + dateArray[0].substring(2,4);
+					valueTimeRemainder=this.value.substring(9,this.format.length);
+					formatTimeRemainder=this.format.substring(9,this.format.length);
+				}
+				var timeArray = valueTimeRemainder.substring(0,8).split(":");
+				if(timeArray.length === 3){
+					if(timeArray[0].length<2){timeArray[0]="0"+timeArray[0];}
+					if(timeArray[1].length<2){timeArray[1]="0"+timeArray[1];}
+					if(timeArray[2].length<2){timeArray[2]="0"+timeArray[2];}
+					if(formatTimeRemainder.substring(formatTimeRemainder.length-2,formatTimeRemainder.length).toLowerCase()==="am"){
+						if(timeArray[0]>=13){
+							timeArray[0]=timeArray[0]-12;
+							if(timeArray[0].length<2){timeArray[0]="0"+timeArray[0];}
+							amPm=" PM";
+						}else{
+							amPm=" AM";
+						}
+						miliSeconds=this.value.substring(this.format.length-4,this.format.length);
+					}
+					formattedValue+=" "+timeArray[0]+":"+timeArray[1]+":"+timeArray[2]+"."+miliSeconds+amPm;
+				}
+			}			
+		} 
+	} else if(this.value instanceof "Date"){
+		month = this.value.getMonth() + 1;
+		if(month.length < 2){month = "0" + month;}
+		day=this.value.getDate();
+		if(day.length < 2){day = "0" + day;}
+		year=this.value.getFullYear();
+		if(this.format === "99/99/99"){
+			formattedValue=month + "/" + day + "/" + year.substring(2, 4);
+		}else if(this.format === "99/99/9999"){
+			formattedValue=month + "/" + day + "/" + year;
+		}
+	}
+	return formattedValue;
+};
+
 function node4progressHttp(conf) {
 	var that = this;
 	if(conf !== null){
@@ -565,6 +716,7 @@ function node4progressHttp(conf) {
 	this.dynCallPromises = [];
 	this.handlerPromises = [];
 	this.datasetPromises = [];
+	this.tempTablePromises = [];
 	this.spawn = require('child_process').spawn;	
 	this.winstoneStarted=false;
 	this.appserverUrl = this.conf.AppserverUrl;
@@ -613,6 +765,9 @@ node4progressHttp.prototype.startWinstone = function(){
              for(var i=0;i<that.datasetPromises.length;i++){
             	 that.datasetPromises[i].executeRequest();
              }
+             for(var i=0;i<that.tempTablePromises.length;i++){
+            	 that.tempTablePromises[i].executeRequest();
+             }
            }	           
 		});			
 	this.winstone.stderr.on('data', function (data) {
@@ -624,8 +779,21 @@ node4progressHttp.prototype.startWinstone = function(){
 		});
 	process.on('uncaughtException', function(err) {
           console.log('Exception: ' + err + "\n"+err.stack);
+          /*
+          that.stopWinstone(function(err,result){
+          	console.log("stopWintone->"+result);
+          });
+          */         
           that.winstone.kill('SIGHUP');
+	});	
+	process.on('SIGHUP', function(err) {
+        console.log('\'SIGHUP\' fired');
+        that.stopWinstone(function(err,result){
+        	console.log("stopWintone->"+result);
+        });
+        //that.winstone.kill('SIGHUP');
 	});			
+	
 };
 node4progressHttp.prototype.handler = function(){
 	return new handlerCallPromise(this);
@@ -726,6 +894,26 @@ node4progressHttp.prototype.getEmptyDataset = function(iDatasetNm,iDatasetProvid
 	dsPromise.execute();
 };
 
+node4progressHttp.prototype.getEmptyTempTable = function(iTtNm,iTtProvider,callback){
+	var that=this;
+	var tt=null;
+	this.setAppsvrProc("getSchema","",false,true);
+	this.setParameter(iTtNm,"table-handle","output","",iTtProvider);
+	var ttPromise = new tempTablePromise(this,JSON.stringify(this.dynCall),function(err,iJsonDatasetStr){
+		var jsonObj=null;
+        try{
+        	jsonObj=JSON.parse(iJsonDatasetStr);   
+		    tt=that.getTempTable(iTtNm,iJsonDatasetStr);
+        }catch(e){
+        	if(jsonObj && jsonObj["error"]!==""){
+        		err=jsonObj["error"] + "\n";
+        	}
+        	err+=e;
+        }
+		callback(err,tt);
+	});
+	ttPromise.execute();
+};
 node4progressHttp.prototype.prepareAppsvrCall = function(dsCallStack,callback){
     //var callParameter=null;
     //var i=0;
@@ -778,7 +966,27 @@ node4progressHttp.prototype.getDataset = function(iDsName,iDynCallJson){
 	}
 	var dataset = new Dataset(iDsName,iDynCallJson);
 	return dataset;
-}
+};
+node4progressHttp.prototype.getTempTable = function(iTtNm,iDynCallJson){
+	var tt = null;
+	if(typeof iDynCallJson == "string"){
+		iDynCallJson=JSON.parse(iDynCallJson);
+	}
+	tt=this.getTempTableS1(iTtNm, iDynCallJson);
+	return tt;
+};
+
+node4progressHttp.prototype.getTempTableS1 = function(iTtNm,iJsonObj){
+	for(var prop in iJsonObj){
+		if(iJsonObj[prop][iTtNm] &&
+		   iJsonObj[iTtNm+"MetaSchema"]){
+			  tt = new TempTable(null,iTtNm,iJsonObj[prop][iTtNm],iJsonObj[iTtNm+"MetaSchema"]);
+		 }else if(typeof iJsonObj === "object"){
+			 tt=this.getTempTableS1(iTtNm, iJsonObj[prop]);
+		 }
+	}
+	return tt;
+};
 //export a new instance to the interface per call
 module.exports	= function(conf) {
 	return new node4progressHttp(conf);
