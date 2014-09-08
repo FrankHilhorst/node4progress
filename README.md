@@ -139,6 +139,8 @@ Open up a browser and point to the following url:
 If this results in a web page that looks like this then yoiur
 configuration is correct:
 
+![][]
+
 ## Objective
 
 ## Usage
@@ -147,6 +149,7 @@ configuration is correct:
 
 Created with [Nodeclipse v0.4][] ([Eclipse Marketplace][], [site][])
 
+  []: ConfigScreenshot.png
   [Nodeclipse v0.4]: https://github.com/Nodeclipse/nodeclipse-1
   [Eclipse Marketplace]: http://marketplace.eclipse.org/content/nodeclipse
   [site]: http://www.nodeclipse.org
