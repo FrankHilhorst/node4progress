@@ -376,6 +376,8 @@ PROCEDURE createOutputJsonMsg :
                               DO:
                                   IF ttCallParameter.parDataType EQ "DATASET-HANDLE"
                                       THEN ASSIGN vLongCharOutput = vLongCharOutput + ",~n" + getMetaSchemaDataset(vDataHandle).
+                                  ELSE IF ttCallParameter.parDataType EQ "TABLE-HANDLE"
+                                      THEN ASSIGN vLongCharOutput = vLongCharOutput + "," + getMetaSchemaTable(vDataHandle:DEFAULT-BUFFER-HANDLE).
                               END.                
                       END.
                       ELSE ASSIGN oErrMsg = SUBST('&1 handle could not be retrieved for parameter "&2"',
@@ -772,7 +774,9 @@ PROCEDURE PrepareCallObj-TableHandle :
     DEFINE VARIABLE vProcNm AS CHARACTER   NO-UNDO.
     DEFINE VARIABLE vInput AS LONGCHAR   NO-UNDO.
     DEFINE VARIABLE vhBufferField AS HANDLE      NO-UNDO.
-    ASSIGN vhBufferField = vhTtBuf:BUFFER-FIELD(ttCallParameter.parName) NO-ERROR.
+    DEFINE VARIABLE vhTableHandle AS HANDLE      NO-UNDO.
+    ASSIGN vhBufferField = vhTtBuf:BUFFER-FIELD(ttCallParameter.parName) 
+           vhTableHandle = vhBufferField:BUFFER-VALUE NO-ERROR.
     IF ERROR-STATUS:ERROR 
         THEN ASSIGN oErrMsg = SUBST('Failed to get buffer-field handle for parameter "&1"~n' +
                                     '   ERROR(&2)->&3',
@@ -805,7 +809,7 @@ PROCEDURE PrepareCallObj-TableHandle :
                  
                  IF oErrMsg EQ "" THEN
                  DO:
-                     RUN VALUE(vProcNm + ".p") (OUTPUT DATASET-HANDLE vhBufferField) NO-ERROR.
+                     RUN VALUE(vProcNm + ".p") (OUTPUT TABLE-HANDLE vhTableHandle) NO-ERROR.
                      IF ERROR-STATUS:ERROR 
                          THEN ASSIGN oErrMsg = SUBST("Error occured running temp-table schema provider &1 for parameter &2~nERROR(&3)-> &4",
                                                      ttCallParameter.SchemaProvider,
@@ -820,7 +824,8 @@ PROCEDURE PrepareCallObj-TableHandle :
                 ASSIGN  vInput = getLongCharVal(ttCallParameter.parIndex).
                 IF vInput NE "" AND vInput NE ? THEN
                 DO:
-                   vhBufferField:READ-JSON("LONGCHAR",vInput) NO-ERROR.
+                   vhTableHandle:READ-JSON("LONGCHAR",vInput) NO-ERROR.
+                   vhBufferField:BUFFER-VALUE = vhTableHandle.
                    IF ERROR-STATUS:ERROR 
                        THEN ASSIGN oErrMsg = SUBST("Error occured loading input for parameter &1~nERROR(&2)-> &3",
                                                    ttCallParameter.parName,
@@ -1138,8 +1143,11 @@ FUNCTION getMetaSchemaTable RETURNS LONGCHAR
     Notes:  
 ------------------------------------------------------------------------------*/
   DEFINE VARIABLE vTableMetaSchema AS LONGCHAR   NO-UNDO.
-  DEFINE VARIABLE i AS INTEGER     NO-UNDO.
-  ASSIGN vTableMetaSchema = SUBST('~n "&1":~{',ihTable:NAME).
+  DEFINE VARIABLE i                AS INTEGER    NO-UNDO.
+  DEFINE VARIABLE vPostfix         AS CHARACTER   NO-UNDO.
+  IF NOT PROGRAM-NAME(2) MATCHES "*getMetaSchemaDataset*" 
+      THEN vPostfix = "MetaSchema".
+  ASSIGN vTableMetaSchema = SUBST('~n "&1":~{',ihTable:NAME + vPostfix).
   DO i = 1 TO ihTable:NUM-FIELDS:
       ASSIGN vTableMetaSchema = vTableMetaSchema + getMetaSchemaBufferField(ihTable:BUFFER-FIELD(i)) +
                                 IF i < ihTable:NUM-FIELDS THEN ",~n" ELSE "~n".
