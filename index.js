@@ -2,17 +2,25 @@ var http        = require("http"),
 	moment		= require("moment"),
     numeral     = require('numeral'),
     Dataset		= require('./dataset.js'),
-    TempTable	= require('./temptable.js');
+    TempTable	= require('./temptable.js'),
+    debug		= require('debug'),
+    log			= debug("n4p:index");
+
+debug.enable("n4p:*");
 
 /*****************************************************************************************************/
 //dynCallPromise -> promise object for dynamic call requests
 function dynCallPromise(iNode4Progress,iDyncallJsonStr){
+	log( "dCP create" );
+
 	this.node4progress	= iNode4Progress;
 	this.dynCallJsonStr	= iDyncallJsonStr;
 	this.callback		= null;
 }
 
 dynCallPromise.prototype.execute = function(iCallback){
+	log( "dCP:execute" );
+
 	if(iCallback){
         this.callback	= iCallback;
 	}
@@ -24,6 +32,8 @@ dynCallPromise.prototype.execute = function(iCallback){
 };
 
 dynCallPromise.prototype.executeAppCall = function(){
+	log( "dCP:executeAppCall" );
+
 	var that = this;
 	
 	this.node4progress.prepareAppsvrCall( this.dynCallJsonStr, function( err, dynCallStr ){		
@@ -38,12 +48,16 @@ dynCallPromise.prototype.executeAppCall = function(){
 /*****************************************************************************************************/
 //datasetPromise -> promise object for getDatasetScheme requests
 function datasetPromise( iNode4Progress, iDyncallJsonStr, iCallback ){
+	log( "dsP create" );
+
 	this.node4progress		= iNode4Progress;
 	this.dynCallJsonStr		= iDyncallJsonStr;
 	this.callback			= iCallback;
 }
 
 datasetPromise.prototype.execute = function(){
+	log( "dsP:execute" );
+
 	if(this.node4progress.winstoneStarted === true){
 		this.executeRequest();
 	} else {
@@ -51,6 +65,8 @@ datasetPromise.prototype.execute = function(){
 	}	
 };
 datasetPromise.prototype.executeRequest = function(){
+	log( "dsP:executeRequest" );
+
 	var that = this;
 	this.node4progress.prepareAppsvrCall( this.dynCallJsonStr, function( err, dynCallStr ){		
 		if( err & err!==null){
@@ -64,12 +80,16 @@ datasetPromise.prototype.executeRequest = function(){
 /*****************************************************************************************************/
 //tamptablePromise -> promise object for getDatasetScheme requests
 function tempTablePromise( iNode4Progress, iDyncallJsonStr,iCallback){
+	log( "ttP create" );
+	
 	this.node4progress		= iNode4Progress;
 	this.dynCallJsonStr		= iDyncallJsonStr;
 	this.callback			= iCallback;
 }
 
 tempTablePromise.prototype.execute = function(){
+	log( "ttP:execute" );
+
 	if(this.node4progress.winstoneStarted === true){
 		this.executeRequest();
 	} else {
@@ -78,6 +98,8 @@ tempTablePromise.prototype.execute = function(){
 };
 
 tempTablePromise.prototype.executeRequest = function(){
+	log( "ttP:executeRequest" );
+
 	var that = this;
 	this.node4progress.prepareAppsvrCall(this.dynCallJsonStr,function(err,dynCallStr){
 		if(err & err!==null){
@@ -92,6 +114,8 @@ tempTablePromise.prototype.executeRequest = function(){
 /*****************************************************************************************************/
 // handlerCallPromise -> promise object for getDatasetScheme requests
 function handlerCallPromise(iNode4Progress){
+	log( "hcP create" );
+	
 	this.node4progress	= iNode4Progress;
 	this.handler		= null;
 	this.inputPars		= null;
@@ -99,7 +123,8 @@ function handlerCallPromise(iNode4Progress){
 }
 
 handlerCallPromise.prototype.execute = function(iHandler,iInputPars,iCallBack){
-	var that = this;
+	log( "hcP:execute", iHandler );
+
 	if(iHandler){
 		this.handler=iHandler;
 	} 
@@ -117,11 +142,15 @@ handlerCallPromise.prototype.execute = function(iHandler,iInputPars,iCallBack){
 };
 
 handlerCallPromise.prototype.executeHandler = function(){
+	log( "hcP:executeHandler" );
+	
     var callBackNow = this.callback;
 	this.node4progress.callHandler( this.handler, this.inputPars, this.callback );
 };
 
 function node4progress(conf) {
+	log( "n4p create" );
+
 	var that = this;
 	if(conf !== null){
        this.conf = conf;
@@ -148,7 +177,8 @@ function node4progress(conf) {
 }
 
 node4progress.prototype.startWinstone = function(){
-	//this.env = process.env;
+	log( "startWinstone" );
+
 	var that = this;
 	this.env.appserverUrl			= this.appserverUrl;
 	this.env.appserverUserName		= that.appserverUserName;
@@ -209,15 +239,20 @@ node4progress.prototype.startWinstone = function(){
 };
 
 node4progress.prototype.handler = function(){
+	log( "handler" );
 	return new handlerCallPromise(this);
 };
 
 node4progress.prototype.callHandler	= function( iHandler, iInputParameters, callback ){
+	log( "callHandler", iHandler );
+
 	var post_data = iHandler + "|" + iInputParameters;
 	this.httpPost(post_data, "text/plain", "CallHandler", callback);
 };
 
 node4progress.prototype.httpPost = function( post_data, callback ) {
+	log( "httpPost", post_data );
+
 	// An object of options to indicate where to post to
 	var post_options = {
 			host:		'localhost',
@@ -249,10 +284,14 @@ node4progress.prototype.httpPost = function( post_data, callback ) {
 };
 
 node4progress.prototype.stopWinstone = function(callback){
+	log( "stopWinstone" );
+
 	this.httpPost("","text/plain","stop",callback);
 };
 
 node4progress.prototype.setAppsvrProc = function(iProcName,iInternalProcName,iIsPersistent,iIncludeMetaSchemna){
+	log( "setAppSvrProc", iProcName );
+
 	this.dynCall = {
 		dsCallStack:	{
 			ttCallProgram:		[],
@@ -270,6 +309,8 @@ node4progress.prototype.setAppsvrProc = function(iProcName,iInternalProcName,iIs
 };
 
 node4progress.prototype.setParameter = function(parName,parDataType,parIoMode,parValue,SchemaProvider){
+	log( "setParameter", parName );
+
 	this.dynCall.dsCallStack.ttCallParameter.push( {
 		parIndex: 		this.dynCall.dsCallStack.ttCallParameter.length + 1,
 		parDataType:	parDataType,
@@ -281,21 +322,29 @@ node4progress.prototype.setParameter = function(parName,parDataType,parIoMode,pa
 };
 
 node4progress.prototype.setPar = function( elm ) {
+	log( "setPar", elm.parName );
+
 	elm.parIndex	= this.dynCall.dsCallStack.ttCallParameter.length + 1;
 	this.dynCall.dsCallStack.ttCallParameter.push( elm );	
 };
 node4progress.prototype.appProc = function(){
+	log( "appProc" );
+
 	var dynCallStr = JSON.stringify(this.dynCall);
 	return new dynCallPromise(this,dynCallStr);
 };
 
 node4progress.prototype.invoke = function(callback){
+	log( "invoke" );
+
 	var dynCallStr = JSON.stringify(this.dynCall);
 	var appCall = new dynCallPromise(this,dynCallStr);
 	appCall.execute(callback);
 };
 
 node4progress.prototype.getEmptyDataset = function(iDatasetNm,iDatasetProvider,callback){
+	log( "getEmptyDataset", iDatasetNm );
+
 	var that=this;
 	var dataset=null;
 	this.setAppsvrProc("getSchema","",false,true);
@@ -317,6 +366,8 @@ node4progress.prototype.getEmptyDataset = function(iDatasetNm,iDatasetProvider,c
 };
 
 node4progress.prototype.getEmptyTempTable = function(iTtNm,iTtProvider,callback){
+	log( "getEmptyTempTable", iTtNm );
+
 	var that=this;
 	var tt=null;
 	this.setAppsvrProc("getSchema","",false,true);
@@ -338,6 +389,8 @@ node4progress.prototype.getEmptyTempTable = function(iTtNm,iTtProvider,callback)
 };
 
 node4progress.prototype.prepareAppsvrCall = function(dsCallStack,callback){
+	log( "prepareAppsvrCall" );
+
 	var j=0;
 	var k=0;
 	var ttLongcharChunk = null;
@@ -387,6 +440,8 @@ node4progress.prototype.prepareAppsvrCall = function(dsCallStack,callback){
 };
 
 node4progress.prototype.getDataset = function(iDsName,iDynCallJson){
+	log( "getDataset", iDsName );
+
 	if(typeof iDynCallJson == "string"){
 		iDynCallJson=JSON.parse(iDynCallJson);
 	}
@@ -395,6 +450,8 @@ node4progress.prototype.getDataset = function(iDsName,iDynCallJson){
 };
 
 node4progress.prototype.getTempTable = function(iTtNm,iDynCallJson){
+	log( "getTempTable", iTtNm );
+
 	var tt = null;
 	if(typeof iDynCallJson == "string"){
 		iDynCallJson=JSON.parse(iDynCallJson);
@@ -404,6 +461,8 @@ node4progress.prototype.getTempTable = function(iTtNm,iDynCallJson){
 };
 
 node4progress.prototype.getTempTableS1 = function(iTtNm,iJsonObj){
+	log( "getTempTableS1", iTtNm );
+	
 	for(var prop in iJsonObj){
 		if(iJsonObj[prop][iTtNm] &&
 		   iJsonObj[iTtNm+"MetaSchema"]){
