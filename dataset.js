@@ -1,6 +1,11 @@
-var TempTable       = require('./temptable.js');
+var TempTable       = require('./temptable.js'),
+	debug			= require('debug'),
+	log				= debug('n4p:dataset');
+	
 
 function Dataset( iDatasetNm , iJsonObj ) {
+	log( "ds create" );
+
 	this.dataset	= null;
 	this.metaSchema	= null;
 	this.name		= "";
@@ -13,6 +18,8 @@ function Dataset( iDatasetNm , iJsonObj ) {
 }
 
 Dataset.prototype.$ = function(ttName){
+	log( "ds:$", ttName );
+
 	var targetTable     = null,
 	    datasetContents = null,
 	    ttNm            = "";
@@ -41,6 +48,8 @@ Dataset.prototype.$ = function(ttName){
 };
 
 Dataset.prototype.copyDataset = function(empty){
+	log( "ds:copyDataset" );
+
 	var copyDatasetJsonObj = {},
 	    copyDataset;
 
@@ -57,14 +66,16 @@ Dataset.prototype.copyDataset = function(empty){
 };
 
 Dataset.prototype.emptyDataset = function(){
-    var that    = this;
-    
+	log( "ds:emptyDataset" );
+
     this.dataset[this.rootName].forEach( function( item, prop ) {
-		that.$( prop ).emptyTemptable();
-    });
+		this.$( prop ).emptyTemptable();
+    }, this );
 };
 
 Dataset.prototype.getDataset = function(iDatasetNm,iJsonObj){
+	log( "ds:getDataset", iDatasetNm );
+
 	var prop,
 	    prop2;
 	    
@@ -88,6 +99,8 @@ Dataset.prototype.getDataset = function(iDatasetNm,iJsonObj){
 };
 
 Dataset.prototype.writeJson = function(){
+	log( "ds:writeJson" );
+
 	var writeJson   = "",
 	    jsonObj     = {};
 	

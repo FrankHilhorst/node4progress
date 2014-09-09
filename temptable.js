@@ -1,6 +1,9 @@
-
+var debug		= require('debug'),
+	log			= debug('n4p:temptable');
 
 function TempTable( iDataset, iName, ttRecordArray, iMetaSchema ){
+	log( "tt create", iName );
+
 	this.dataset            = null;
 
 	iDataset && (this.dataset     = iDataset.dataset);
@@ -17,10 +20,14 @@ function TempTable( iDataset, iName, ttRecordArray, iMetaSchema ){
 }
 
 TempTable.prototype.available = function() {
+	log( "tt:available" );
+	
 	return (this.currentRecordIndex>=0);
 };
 
 TempTable.prototype.bufferCreate = function(){
+	log( "tt:bufferCreate" );
+
 	var newRecord   = {},
 	    fieldDefs   = null,
 	    value       = "";
@@ -38,6 +45,8 @@ TempTable.prototype.bufferCreate = function(){
 };
 
 TempTable.prototype.bufferCopy = function(iRecordJson){
+	log( "tt:bufferCopy" );
+
 	if(this.currentRecordIndex >=0){
 		if(typeof iRecordJson === "string"){
 			iRecordJson=JSON.parse(iRecordJson);
@@ -55,6 +64,8 @@ TempTable.prototype.bufferCopy = function(iRecordJson){
 };
 
 TempTable.prototype.bufferDelete = function(){
+	log( "tt:bufferDelete" );
+
 	var deletedRecordJson=null;
 	if(this.currentRecordIndex>=0){
 		deletedRecordJson=this.records.splice(this.currentRecordIndex);
@@ -68,6 +79,8 @@ TempTable.prototype.bufferDelete = function(){
 };
 
 TempTable.prototype.copyTempTable = function(empty){
+	log( "tt:copyTempTable" );
+
 	var copyTempTableJsonObj = {};
 	copyTempTableJsonObj[this.name] = this.records;	
     copyTempTableJsonObj.metaSchema = this.metaSchema;
@@ -81,24 +94,24 @@ TempTable.prototype.copyTempTable = function(empty){
 };
 
 TempTable.prototype.emptyTemptable = function(){
-	if(this.records){
-		while(this.records.length>0){
-			this.records.splice(0);
-		}
-	}
+	log( "tt:emptyTempTable" );
+
+	this.records	= [];
 };
 
 TempTable.prototype.forEach = function(callback){
-	var that = this;
-	
+	log( "tt:forEach" );
+
 	this.records.forEach( function(item, i ) {
-		that.currentRecordIndex     = i;
-		that.buffer.setCurrentRecord( item );
-	    callback( that.buffer );
-	});
+		this.currentRecordIndex     = i;
+		this.buffer.setCurrentRecord( item );
+	    callback( this.buffer );
+	}, this );
 };
 
 TempTable.prototype.findFirst = function(){
+	log( "tt:findFirst" );
+
 	if(this.records.length>0){
 		this.currentRecordIndex=0;
 		this.buffer.setCurrentRecord(this.records[0]);
@@ -109,6 +122,8 @@ TempTable.prototype.findFirst = function(){
 };
 
 TempTable.prototype.findLast = function(){
+	log( "tt:findLast" );
+
 	if(this.records.length>0){
 		this.currentRecordIndex=this.records.length-1;
 		this.buffer.setCurrentRecord(this.records[this.records.length-1]);
@@ -119,6 +134,8 @@ TempTable.prototype.findLast = function(){
 };
 
 TempTable.prototype.initial = function(iDataType,iValue){
+	log( "tt:initial" );
+
 	var value=null;
 	if(iDataType.toLowerCase()==="integer"||iDataType.toLowerCase()==="decimal"){
 		value=Number(iValue.replace(",",""));
@@ -135,6 +152,8 @@ TempTable.prototype.initial = function(iDataType,iValue){
 };
 
 TempTable.prototype.writeJson = function(){
+	log( "tt:writeJson" );
+
     var obj     = {};
     
     obj[ this.name ]    = this.records;
@@ -143,6 +162,8 @@ TempTable.prototype.writeJson = function(){
 };
 
 TempTable.prototype.jsonObjectEmpty = function(jsonObj){
+	log( "tt:jsonObjectEmpty" );
+
 	var i = 0;
 	jsonObjectEmpty=true;
 	if(jsonObj !== null){

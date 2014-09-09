@@ -1,6 +1,10 @@
-var moment      = require('moment');
+var moment      = require('moment'),
+	debug		= require('debug'),
+	log			= debug('n4p:bufferfield');
 
 function BufferField(){
+	log( "BF create" );
+
 	this.currentRecord  = null;
 	this.name           = "";
 	this.value          = "";
@@ -12,6 +16,8 @@ function BufferField(){
 }
 
 BufferField.prototype.setCurrenBufferField  = function( iName, iCurrentRecord, iFieldMetaSchema ){
+	log( "BF:setCurrentBufferField", iName );
+
 	this.name           = iName;
 	this.currentRecord  = iCurrentRecord;
 	this.metaSchema     = iFieldMetaSchema;
@@ -23,6 +29,8 @@ BufferField.prototype.setCurrenBufferField  = function( iName, iCurrentRecord, i
 };
 
 BufferField.prototype.$ = function(iAttribute){
+	log( "BF:$", iAttribute );
+
 	var attrVal     = "";
 	
 	switch ( iAttribute.toLowerCase() ) {
@@ -70,6 +78,8 @@ BufferField.prototype.$ = function(iAttribute){
 };
 
 BufferField.prototype.bufferValue = function( iValue ) {
+	log( "BF:bufferValue", this.name, iValue );
+
 	if( this.dataType.toLowerCase() === "date" ){
 		this.currentRecord[this.name]	= moment( iValue ).format( "MM/DD/YYYY" );
 	}else{
@@ -78,6 +88,8 @@ BufferField.prototype.bufferValue = function( iValue ) {
 };
 
 BufferField.prototype.setAttr = function( iAttrNm, iValue ) {
+	log( "BF:setAttr", iAttrNm, iValue );
+
 	if(iAttrNm.toLowerCase() === "format"){
 		this.metaSchema["format"]       = iValue;
 	} else {
@@ -86,6 +98,8 @@ BufferField.prototype.setAttr = function( iAttrNm, iValue ) {
 };
 
 BufferField.prototype.formattedValue = function() {
+	log( "BF:formattedValue" );
+
 	var formattedValue,
 		length,
 		i;
@@ -124,6 +138,8 @@ BufferField.prototype.formattedValue = function() {
 };
 
 BufferField.prototype.formattedValueNumber = function(){
+	log( "BF:formattedValueNumber" );
+
 	var decimalPrecision    = 0,
 	    numeralFormat       = "",
 	    formattedValue      = "",
@@ -161,6 +177,8 @@ BufferField.prototype.formattedValueNumber = function(){
 };
 
 BufferField.prototype.formattedValueNumber2 = function(){
+	log( "BF:formattedValueNumber2" );
+
 	var formattedValue  = this.value,
 	    value           = this.value,
         str             = value.toString(),
@@ -227,10 +245,14 @@ BufferField.prototype.formattedValueNumber2 = function(){
 };
 
 BufferField.prototype.formattedValueDate = function(){
+	log( "BF:formattedValueDate" );
+
 	return moment( this.value ).format( (this.format == "99/99/99") ? "DD/MM/YY" : "DD/MM/YYYY" );
 };
 
 BufferField.prototype.formattedValueDateTime = function(){
+	log( "BF:formattedValueDateTime" );
+
 	var day = "";
 	var month = "";
 	var year = "";

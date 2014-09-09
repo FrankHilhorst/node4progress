@@ -1,8 +1,8 @@
 &ANALYZE-SUSPEND _VERSION-NUMBER AB_v10r12
 &ANALYZE-RESUME
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _CUSTOM _DEFINITIONS Procedure 
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _CUSTOM _DEFINITIONS Include 
 /*------------------------------------------------------------------------
-    File        : examples/CustUpd-TemplateHandler.p
+    File        : Examples/CustUpd.i
     Purpose     :
 
     Syntax      :
@@ -17,9 +17,8 @@
 /*----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
-{Examples/CustUpd.i}
 
-DEFINE OUTPUT PARAMETER DATASET FOR dsCustomer.
+DEFINE TEMP-TABLE ttCustomer NO-UNDO LIKE Customer.
 
 /* _UIB-CODE-BLOCK-END */
 &ANALYZE-RESUME
@@ -28,9 +27,6 @@ DEFINE OUTPUT PARAMETER DATASET FOR dsCustomer.
 &ANALYZE-SUSPEND _UIB-PREPROCESSOR-BLOCK 
 
 /* ********************  Preprocessor Definitions  ******************** */
-
-&Scoped-define PROCEDURE-TYPE Procedure
-&Scoped-define DB-AWARE no
 
 
 
@@ -43,11 +39,11 @@ DEFINE OUTPUT PARAMETER DATASET FOR dsCustomer.
 
 &ANALYZE-SUSPEND _PROCEDURE-SETTINGS
 /* Settings for THIS-PROCEDURE
-   Type: Procedure
+   Type: Include
    Allow: 
    Frames: 0
    Add Fields to: Neither
-   Other Settings: CODE-ONLY COMPILE
+   Other Settings: INCLUDE-ONLY
  */
 &ANALYZE-RESUME _END-PROCEDURE-SETTINGS
 
@@ -55,7 +51,7 @@ DEFINE OUTPUT PARAMETER DATASET FOR dsCustomer.
 
 &ANALYZE-SUSPEND _CREATE-WINDOW
 /* DESIGN Window definition (used by the UIB) 
-  CREATE WINDOW Procedure ASSIGN
+  CREATE WINDOW Include ASSIGN
          HEIGHT             = 15
          WIDTH              = 60.
 /* END WINDOW DEFINITION */
@@ -65,7 +61,7 @@ DEFINE OUTPUT PARAMETER DATASET FOR dsCustomer.
  
 
 
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _CUSTOM _MAIN-BLOCK Procedure 
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _CUSTOM _MAIN-BLOCK Include 
 
 
 /* ***************************  Main Block  *************************** */

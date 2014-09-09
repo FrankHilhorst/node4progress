@@ -1,6 +1,10 @@
-var BufferField     = require('./bufferfield.js');
+var BufferField     = require('./bufferfield.js'),
+	debug			= require('debug'),
+	log				= debug('n4p:buffer');
 
 function Buffer(iTempTable,iMetaSchema){
+	log( "Buffer create", iTempTable );
+
 	this.currentRecord  = null;
 	this.tempTable      = iTempTable;
 	this.metaSchema     = iMetaSchema;	
@@ -8,10 +12,13 @@ function Buffer(iTempTable,iMetaSchema){
 }
 
 Buffer.prototype.setCurrentRecord = function(iCurrentRecord){
+	log( "Buffer:setCurrentRecord" );
+	
 	this.currentRecord=iCurrentRecord;
 };
 
 Buffer.prototype.$ = function(fieldNm){
+	log( "Buffer:$", fieldNm );
 
 	fieldNm     = fieldNm.toLowerCase();
 	
@@ -27,6 +34,8 @@ Buffer.prototype.$ = function(fieldNm){
 };
 
 Buffer.prototype.display = function(iFieldToDisplay){
+	log( "Buffer:display", iFieldToDisplay );
+
 	var fields      = iFieldToDisplay.split(" "),
 	    fieldStr    = "";
 

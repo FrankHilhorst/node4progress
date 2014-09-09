@@ -1,8 +1,8 @@
 {
     "name": "node4progress",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "Connector to Progress Appserver",
-    "author": "Frank Hilhorst - Progressive Consulting Inc., Robert Prediger - web4biz Consulting",
+    "author": "Frank Hilhorst - Progressive Consulting Inc.",
     "main": "index.js",
     "readmeFilename": "README.md",
     "scripts": {},
@@ -10,7 +10,7 @@
     "dependencies": {
         "numeral":  "1.5.x",
         "async":    "0.9.x",
-		"clone":	"0.x.x"
+		"debug":    "2.x.x"
     },
     "engines": {
         "node": "0.10.x"

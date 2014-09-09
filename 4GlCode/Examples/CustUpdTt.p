@@ -17,11 +17,11 @@
 /*----------------------------------------------------------------------*/
 
 /* ***************************  Definitions  ************************** */
-{Examples/CustUpd.i}
+{Examples/CustUpdDs.i}
 
 DEFINE INPUT  PARAMETER iMode AS CHARACTER   NO-UNDO.
 DEFINE INPUT  PARAMETER iInputParameters AS CHARACTER   NO-UNDO.
-DEFINE INPUT-OUTPUT PARAMETER DATASET FOR dsCustomer.
+DEFINE INPUT-OUTPUT PARAMETER TABLE FOR ttCustomer.
 DEFINE OUTPUT PARAMETER oOutputPars AS CHARACTER   NO-UNDO.
 DEFINE OUTPUT PARAMETER oErrMsg AS CHARACTER   NO-UNDO.
 
@@ -104,6 +104,7 @@ FUNCTION NextCustNum RETURNS INTEGER
 CASE iMode:
     WHEN "ADD" THEN RUN CustAdd.
     WHEN "UPDATE" THEN RUN CustUpdate.
+    WHEN "DELETE" THEN RUN CustDelete.
     WHEN "GetCustomer" THEN RUN CustGet.
     WHEN "GetNextCustNum" THEN RUN GetNextCustNum.
 END CASE.
@@ -128,6 +129,7 @@ PROCEDURE CustAdd :
   DO: 
       COMMIT:
       DO TRANSACTION ON ERROR UNDO, LEAVE: 
+          ASSIGN ttCustomer.cust-num = NEXT-VALUE(next-cust-num).
           CREATE Customer.
           BUFFER-COPY ttCustomer TO Customer.
           ASSIGN oOutputPars = "Customer added".
@@ -153,6 +155,28 @@ PROCEDURE CustDelete :
   Parameters:  <none>
   Notes:       
 ------------------------------------------------------------------------------*/
+    DEFINE VARIABLE vI AS INTEGER     NO-UNDO.
+    COMMIT:
+    DO TRANSACTION:
+        FOR EACH ttCustomer:
+            FIND Customer OF ttCustomer NO-LOCK NO-ERROR.
+            IF AVAIL Customer THEN
+            DO:
+                FIND CURRENT Customer EXCLUSIVE-LOCK NO-WAIT NO-ERROR.
+                IF NOT LOCKED Customer THEN
+                DO:
+                    DELETE Customer.
+                    vI = vI + 1.
+                END.
+                ELSE DO:
+                    oErrMsg = "Delete not executed because of a record lock on the customer table".
+                    UNDO COMMIT, LEAVE COMMIT.
+                END.
+            END.
+        END.
+    END.
+    ASSIGN oOutputPars = SUBST("&1 customers deleted",vI).
+
 
 END PROCEDURE.
 
