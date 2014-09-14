@@ -1,5 +1,6 @@
 var moment      = require('moment'),
 	debug		= require('debug'),
+	numeral     = require('numeral')
 	log			= debug('n4p:bufferfield');
 
 function BufferField(){
@@ -100,10 +101,10 @@ BufferField.prototype.setAttr = function( iAttrNm, iValue ) {
 BufferField.prototype.formattedValue = function() {
 	log( "BF:formattedValue" );
 
-	var formattedValue,
-		length,
-		i;
-	
+	var formattedValue = "",
+		length = 0,
+		i = 0;
+	//formattedValue="";
 	switch ( this.dataType.toLocaleLowerCase() ) {
 		case "character":
 			if(this.format.substring(1,2)=="("){
@@ -117,6 +118,7 @@ BufferField.prototype.formattedValue = function() {
 				for(i=this.value.length;i<length;i++){
 					formattedValue+=" ";
 				}
+				formattedValue=this.value+formattedValue;
 			}
 			break;
 			
@@ -133,7 +135,6 @@ BufferField.prototype.formattedValue = function() {
 	    	formattedValue=this.value;
 	    	break;
 	}
-	
     return formattedValue;
 };
 

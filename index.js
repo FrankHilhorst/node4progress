@@ -40,7 +40,8 @@ dynCallPromise.prototype.executeAppCall = function(){
 		if(err & err!==null){
 			that.callback( err, null );
 		}else{
-			that.node4progress.httpPost( dynCallStr, that.callback );
+			//that.node4progress.httpPost( dynCallStr, that.callback );
+			that.node4progress.httpPost(dynCallStr, "application/json","callAppsvrProc", that.callback);
 		}
 	});			
 };
@@ -72,7 +73,8 @@ datasetPromise.prototype.executeRequest = function(){
 		if( err & err!==null){
 			that.callback( err,null );
 		}else{
-			that.node4progress.httpPost( dynCallStr, that.callback );
+			//that.node4progress.httpPost( dynCallStr, that.callback );
+			that.node4progress.httpPost(dynCallStr, "application/json","callAppsvrProc", that.callback);
 		}
 	});			
 };
@@ -105,7 +107,8 @@ tempTablePromise.prototype.executeRequest = function(){
 		if(err & err!==null){
 			that.callback(err,null);
 		}else{
-			that.node4progress.httpPost( dynCallStr, that.callback );
+			//that.node4progress.httpPost( dynCallStr, that.callback );
+			that.node4progress.httpPost(dynCallStr, "application/json","callAppsvrProc", that.callback);
 		}
 	});
 };
@@ -122,12 +125,9 @@ function handlerCallPromise(iNode4Progress){
 	this.callback		= null;
 }
 
-handlerCallPromise.prototype.execute = function(iHandler,iInputPars,iCallBack){
-	log( "hcP:execute", iHandler );
+handlerCallPromise.prototype.execute = function(iInputPars,iCallBack){
+	log( "hcP:execute", iInputPars );
 
-	if(iHandler){
-		this.handler=iHandler;
-	} 
 	if(iInputPars){
 		this.inputPars=iInputPars;
 	} 
@@ -143,9 +143,10 @@ handlerCallPromise.prototype.execute = function(iHandler,iInputPars,iCallBack){
 
 handlerCallPromise.prototype.executeHandler = function(){
 	log( "hcP:executeHandler" );
-	
-    var callBackNow = this.callback;
-	this.node4progress.callHandler( this.handler, this.inputPars, this.callback );
+    //var callBackNow = this.callback;
+	//this.node4progress.callHandler( this.handler, this.inputPars, this.callback );
+	//this.node4progress.httpPost(this.inputPars,this.callback);
+	this.node4progress.httpPost(this.inputPars, "text/plain", "CallHandler", this.callback);
 };
 
 function node4progress(conf) {
@@ -243,44 +244,41 @@ node4progress.prototype.handler = function(){
 	return new handlerCallPromise(this);
 };
 
-node4progress.prototype.callHandler	= function( iHandler, iInputParameters, callback ){
+node4progress.prototype.callHandler	= function( iHandler, iInputParameters,iIncludeMetaSchema, callback ){
 	log( "callHandler", iHandler );
 
-	var post_data = iHandler + "|" + iInputParameters;
-	this.httpPost(post_data, "text/plain", "CallHandler", callback);
+	var post_data = iHandler + "|" + iIncludeMetaSchema + "|" + iInputParameters;
+	var handler = new handlerCallPromise(this);
+	handler.execute(post_data,callback);
 };
 
-node4progress.prototype.httpPost = function( post_data, callback ) {
-	log( "httpPost", post_data );
+node4progress.prototype.httpPost = function(post_data,content_type,callMethod,callback) {
+    // An object of options to indicate where to post to
+    var post_options = {
+        host: 'localhost',
+        port: this.winstoneSvrPort,
+        path: '/TurboNode?' + callMethod,
+        method: 'POST',
+        headers: {
+            'Content-Type': content_type,
+            'Content-Length': post_data.length
+        }
+    };
+    // Set up the request
+    var post_req = http.request(post_options, function(res) {
+        var resultStr = "";
+        res.setEncoding('utf8');
+        res.on('data', function (chunk) {
+            resultStr+=chunk;
+        });	     
+        res.on('end',function(){	
+            callback(null,resultStr);
+        });	      
+    });
 
-	// An object of options to indicate where to post to
-	var post_options = {
-			host:		'localhost',
-			port:		this.winstoneSvrPort,
-			path:		'/TurboNode?callAppsvrProc',
-			method:		'POST',
-			headers:	{
-				'Content-Type':	"application/json;charset=UTF-8",
-				'Content-Length': post_data.length
-			}
-		};
-		
-	// Set up the request
-	var post_req = http.request(post_options, function(res) {
-		var resultStr = "";
-
-		res.setEncoding('utf8');
-		res.on('data', function (chunk) {
-			resultStr+=chunk;
-		});	     
-		res.on('end',function(){	
-			callback(null,resultStr);
-		});	      
-	});
-	
-	// post the data
-	post_req.write(post_data);
-	post_req.end();
+    // post the data
+    post_req.write(post_data);
+    post_req.end();
 };
 
 node4progress.prototype.stopWinstone = function(callback){

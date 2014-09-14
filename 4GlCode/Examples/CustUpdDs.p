@@ -155,7 +155,8 @@ PROCEDURE CustDelete :
   Parameters:  <none>
   Notes:       
 ------------------------------------------------------------------------------*/
-    DEFINE VARIABLE vI AS INTEGER     NO-UNDO.
+    DEFINE VARIABLE vI                 AS INTEGER     NO-UNDO.
+    DEFINE VARIABLE vcCustomersDeleted AS CHARACTER     NO-UNDO.
     COMMIT:
     DO TRANSACTION:
         FOR EACH ttCustomer:
@@ -165,6 +166,8 @@ PROCEDURE CustDelete :
                 FIND CURRENT Customer EXCLUSIVE-LOCK NO-WAIT NO-ERROR.
                 IF NOT LOCKED Customer THEN
                 DO:
+                    IF vcCustomersDeleted NE "" THEN vcCustomersDeleted = vcCustomersDeleted + ",".
+                    vcCustomersDeleted = vcCustomersDeleted + STRING(Customer.Cust-num).
                     DELETE Customer.
                     vI = vI + 1.
                 END.
@@ -175,7 +178,7 @@ PROCEDURE CustDelete :
             END.
         END.
     END.
-    ASSIGN oOutputPars = SUBST("&1 customers deleted",vI).
+    ASSIGN oOutputPars = SUBST("&1 customers deleted: &2",vI,vcCustomersDeleted).
 
 
 END PROCEDURE.
@@ -258,7 +261,7 @@ PROCEDURE CustUpdate :
                 ASSIGN oErrMsg = SUBST("(&1)->&2",ErrObj:getMessageNum(1),ErrObj:getMessage(1)).
               END.
               FINALLY:
-                IF oErrMsg EQ "" THEN ASSIGN oOutputPars = "Customer updated".
+                IF oErrMsg EQ "" THEN ASSIGN oOutputPars = SUBST("Customer with cust-num &1 updated",customer.cust-num).
               END.
           END.
 

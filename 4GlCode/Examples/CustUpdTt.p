@@ -2,7 +2,7 @@
 &ANALYZE-RESUME
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _CUSTOM _DEFINITIONS Procedure 
 /*------------------------------------------------------------------------
-    File        : CustUpd.p 
+    File        : CustUpdTt.p 
     Purpose     :
 
     Syntax      :
@@ -156,6 +156,7 @@ PROCEDURE CustDelete :
   Notes:       
 ------------------------------------------------------------------------------*/
     DEFINE VARIABLE vI AS INTEGER     NO-UNDO.
+    DEFINE VARIABLE vCustometerDeleted AS CHARACTER   NO-UNDO.
     COMMIT:
     DO TRANSACTION:
         FOR EACH ttCustomer:
@@ -165,6 +166,8 @@ PROCEDURE CustDelete :
                 FIND CURRENT Customer EXCLUSIVE-LOCK NO-WAIT NO-ERROR.
                 IF NOT LOCKED Customer THEN
                 DO:
+                    IF vCustometerDeleted NE "" THEN vCustometerDeleted = vCustometerDeleted + ",".
+                    vCustometerDeleted = vCustometerDeleted + STRING(customer.cust-num).
                     DELETE Customer.
                     vI = vI + 1.
                 END.
@@ -175,7 +178,7 @@ PROCEDURE CustDelete :
             END.
         END.
     END.
-    ASSIGN oOutputPars = SUBST("&1 customers deleted",vI).
+    ASSIGN oOutputPars = SUBST("&1 customers deleted: &2",vI,vCustometerDeleted).
 
 
 END PROCEDURE.
@@ -198,15 +201,10 @@ PROCEDURE CustGet :
     DEFINE VARIABLE vCustNumFrom AS INTEGER     NO-UNDO.
     DEFINE VARIABLE vCustNumTo   AS INTEGER     NO-UNDO.
 
-MESSAGE 'GetParameter("Mode", iInputParameters,"|")' GetParameter("Mode", iInputParameters,"|")  SKIP
-    VIEW-AS ALERT-BOX INFO BUTTONS OK.
     IF GetParameter("Mode", iInputParameters,"|") EQ "FromTo" THEN
     DO:
         ASSIGN vCustNumFrom = INT(GetParameter("Cust-num-from", iInputParameters,"|"))
                vCustNumTo   = INT(GetParameter("Cust-num-to", iInputParameters,"|")).
-MESSAGE "vCustNumFrom" vCustNumFrom SKIP
-        " vCustNumTo"  vCustNumTo SKIP
-    VIEW-AS ALERT-BOX INFO BUTTONS OK.
         FOR EACH Customer NO-LOCK 
             WHERE Customer.cust-num >=  vCustNumFrom
             AND Customer.cust-num <=  vCustNumTo:
@@ -239,6 +237,7 @@ PROCEDURE CustUpdate :
   Parameters:  <none>
   Notes:       
 ------------------------------------------------------------------------------*/
+  DEFINE VARIABLE vCustNum AS INTEGER     NO-UNDO.
   FIND FIRST ttCustomer NO-ERROR.
   
   IF AVAIL ttCustomer THEN
@@ -251,6 +250,7 @@ PROCEDURE CustUpdate :
               FIND CURRENT Customer EXCLUSIVE-LOCK NO-WAIT NO-ERROR.
               IF NOT LOCKED Customer THEN
               DO:
+                  ASSIGN  vCustNum = ttCustomer.cust-num.
                   BUFFER-COPY ttCustomer TO Customer.
               END.
               ELSE oErrMsg = "Customer record locked". 
@@ -258,7 +258,7 @@ PROCEDURE CustUpdate :
                 ASSIGN oErrMsg = SUBST("(&1)->&2",ErrObj:getMessageNum(1),ErrObj:getMessage(1)).
               END.
               FINALLY:
-                IF oErrMsg EQ "" THEN ASSIGN oOutputPars = "Customer updated".
+                IF oErrMsg EQ "" THEN ASSIGN oOutputPars = SUBST("Customer &1 updated",vCustNum).
               END.
           END.
 

@@ -10,7 +10,8 @@
     "dependencies": {
         "numeral":  "1.5.x",
         "async":    "0.9.x",
-		"debug":    "2.x.x"
+		"debug":    "2.x.x",
+		"moment":   "0.10.x"
     },
     "engines": {
         "node": "0.10.x"

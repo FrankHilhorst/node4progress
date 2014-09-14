@@ -2,15 +2,15 @@
 &ANALYZE-RESUME
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _CUSTOM _DEFINITIONS Procedure 
 /*------------------------------------------------------------------------
-    File        : NodeJsDispatch.p 
+    File        : FatalRecurse.p
     Purpose     :
 
     Syntax      :
 
     Description :
 
-    Author(s)   : Frank Hilhorst
-    Created     : 10/9/2013
+    Author(s)   :
+    Created     :
     Notes       :
   ----------------------------------------------------------------------*/
 /*          This .W file was created with the Progress AppBuilder.      */
@@ -18,16 +18,7 @@
 
 /* ***************************  Definitions  ************************** */
 
-DEFINE INPUT  PARAMETER iHandler           AS CHARACTER  NO-UNDO.
-DEFINE INPUT  PARAMETER iInputPars         AS LONGCHAR   NO-UNDO.
-DEFINE INPUT  PARAMETER iIncludeMetaSchema AS LOGICAL    NO-UNDO.
-DEFINE OUTPUT PARAMETER oOutputPars        AS LONGCHAR   NO-UNDO.
-DEFINE OUTPUT PARAMETER oDatasetJson       AS LONGCHAR   NO-UNDO.
-DEFINE OUTPUT PARAMETER oErrMsg            AS CHARACTER  NO-UNDO.
-
-DEFINE VARIABLE vInputPars         AS CHARACTER   NO-UNDO.
-DEFINE VARIABLE vDatasetHandle     AS HANDLE      NO-UNDO.
-DEFINE VARIABLE vhnodeJsMetaSchema AS HANDLE      NO-UNDO.
+DEFINE OUTPUT PARAMETER oRecurseTotal AS INTEGER     NO-UNDO.
 
 /* _UIB-CODE-BLOCK-END */
 &ANALYZE-RESUME
@@ -78,32 +69,30 @@ DEFINE VARIABLE vhnodeJsMetaSchema AS HANDLE      NO-UNDO.
 
 /* ***************************  Main Block  *************************** */
 
-DO ON ERROR UNDO, LEAVE:
-  RUN  nodeJsMetaSchema.p PERSISTENT SET vhNodeJsMetaSchema.
-
-  RUN VALUE(iHandler) (
-      INPUT iInputPars,
-      OUTPUT oOutputPars,
-      OUTPUT DATASET-HANDLE vDatasetHandle,
-      OUTPUT oErrMsg).
-  IF VALID-HANDLE(vDatasetHandle) THEN
-  DO:
-/* MESSAGE " iIncludeMetaSchema"  iIncludeMetaSchema SKIP */
-/*     VIEW-AS ALERT-BOX INFO BUTTONS OK.                 */
-     /*vDatasetHandle:WRITE-JSON("LONGCHAR",oDatasetJson,TRUE).*/
-     ASSIGN oDatasetJson = DYNAMIC-FUNCTION("getDatasetOutputJson" IN vhNodeJsMetaSchema ,
-                                            vDatasetHandle:NAME,
-                                            vDatasetHandle,
-                                            iIncludeMetaSchema).
-  END.
-  CATCH oneError AS Progress.Lang.SysError: 
-      ASSIGN oErrMsg = oneError:GetMessage(1).
-  END CATCH.  
-  FINALLY:
-  END FINALLY.
-END.
+ASSIGN oRecurseTotal = 1.
+RUN Recurse (INPUT-OUTPUT oRecurseTotal).
 
 /* _UIB-CODE-BLOCK-END */
 &ANALYZE-RESUME
 
+
+/* **********************  Internal Procedures  *********************** */
+
+&IF DEFINED(EXCLUDE-Recurse) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _PROCEDURE Recurse Procedure 
+PROCEDURE Recurse :
+/*------------------------------------------------------------------------------
+  Purpose:     
+  Parameters:  <none>
+  Notes:       
+------------------------------------------------------------------------------*/
+    DEFINE INPUT-OUTPUT PARAMETER  oRecurseTotal  AS INTEGER     NO-UNDO.
+    RUN Recurse (INPUT-OUTPUT oRecurseTotal). 
+END PROCEDURE.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
 

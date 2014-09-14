@@ -2,7 +2,7 @@
 &ANALYZE-RESUME
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _CUSTOM _DEFINITIONS Procedure 
 /*------------------------------------------------------------------------
-    File        : examples/CustUpd-TemplateHandler.p
+    File        : examples/CustUpd-SchemaProvider.p
     Purpose     :
 
     Syntax      :

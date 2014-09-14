@@ -19,18 +19,48 @@ function Dataset( iDatasetNm , iJsonObj ) {
 
 Dataset.prototype.$ = function(ttName){
 	log( "ds:$", ttName );
+	var targetTable = null;
+	//var datasetContents = this.dataset[this.name];
+	var datasetContents=null;
+	for(var prop in this.dataset){
+		datasetContents=this.dataset[prop];
+		break;
+	}
+	var ttNm = "";
+	for(var tt in datasetContents){		
+		if(tt.toString().toLowerCase() == ttName.toLowerCase()){
+			targetTable = datasetContents[tt];
+			ttNm=tt;
+			break;
+		}
+	}
+	if(! this.tempTables[ttNm]){
+		this.tempTables[ttNm]=new TempTable(this,ttNm,targetTable,this.metaSchema[ttNm]);
+	}
+	return this.tempTables[ttNm];
 
+	/*
 	var targetTable     = null,
 	    datasetContents = null,
 	    ttNm            = "";
 
+	
     ttName      = ttName.toLowerCase();
-    
+
     this.dataset.some( function(item) {
 		datasetContents = item;
 		return true;
     });
-
+    
+	var ttNm = "";
+	for(tt in datasetContents){		
+		if(tt.toString().toLowerCase() == ttName.toLowerCase()){
+			targetTable = datasetContents[tt];
+			ttNm=tt;
+			break;
+		}
+	}
+  
     datasetContents.some( function( item, tt ) {
         if ( tt.toString().toLowerCase() == ttName ) {
 			targetTable = datasetContents[tt];
@@ -39,12 +69,12 @@ Dataset.prototype.$ = function(ttName){
         }
         return false;
     });
-    
 	if( !this.tempTables[ttNm] ){
 		this.tempTables[ttNm]   = new TempTable( this, ttNm, targetTable, this.metaSchema[ttNm] );
 	}
 	
 	return this.tempTables[ttNm];
+	*/
 };
 
 Dataset.prototype.copyDataset = function(empty){
@@ -67,10 +97,15 @@ Dataset.prototype.copyDataset = function(empty){
 
 Dataset.prototype.emptyDataset = function(){
 	log( "ds:emptyDataset" );
-
+	for(var prop in this.dataset[this.rootName]){
+		this.$(prop).emptyTempTable();
+	}
+	
+    /*
     this.dataset[this.rootName].forEach( function( item, prop ) {
 		this.$( prop ).emptyTemptable();
     }, this );
+    */
 };
 
 Dataset.prototype.getDataset = function(iDatasetNm,iJsonObj){

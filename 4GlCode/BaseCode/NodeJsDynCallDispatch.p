@@ -23,11 +23,12 @@ DEFINE INPUT PARAMETER iCallParameters AS LONGCHAR NO-UNDO.
 DEFINE OUTPUT PARAMETER oDynCallPayload AS LONGCHAR   NO-UNDO.
 DEFINE OUTPUT PARAMETER oErrMsg AS CHARACTER   NO-UNDO.
 
-DEFINE VARIABLE hDatasetHandle AS HANDLE      NO-UNDO. 
-DEFINE VARIABLE hCallObj AS HANDLE      NO-UNDO.
-DEFINE VARIABLE vhTt AS HANDLE      NO-UNDO.
-DEFINE VARIABLE vhTtBuf AS HANDLE      NO-UNDO.
-DEFINE VARIABLE vLongchar AS LONGCHAR   NO-UNDO EXTENT 50.
+DEFINE VARIABLE hDatasetHandle     AS HANDLE      NO-UNDO. 
+DEFINE VARIABLE hCallObj           AS HANDLE      NO-UNDO.
+DEFINE VARIABLE vhTt               AS HANDLE      NO-UNDO.
+DEFINE VARIABLE vhTtBuf            AS HANDLE      NO-UNDO.
+DEFINE VARIABLE vLongchar          AS LONGCHAR    NO-UNDO EXTENT 50.
+DEFINE VARIABLE vhnodeJsMetaSchema AS HANDLE      NO-UNDO.
 
 /* Unsafe characters that must be encoded in URL's.  See RFC 1738 Sect 2.2. */
 DEFINE VARIABLE url_unsafe   AS CHARACTER NO-UNDO 
@@ -81,6 +82,56 @@ DEFINE DATASET dsCallStack FOR ttCallProgram,ttCallParameter, ttLongcharChunk.
 
 /* ************************  Function Prototypes ********************** */
 
+&IF DEFINED(EXCLUDE-bu_getDatasetOutputJson) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD bu_getDatasetOutputJson Procedure 
+FUNCTION bu_getDatasetOutputJson RETURNS LONGCHAR
+  ( /* parameter-definitions */
+      iParName AS CHAR,
+      iDatasetHandle AS HANDLE,
+      iIncludeMetaSchema AS LOGICAL)  FORWARD.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
+&IF DEFINED(EXCLUDE-bu_getMetaSchemaBufferField) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD bu_getMetaSchemaBufferField Procedure 
+FUNCTION bu_getMetaSchemaBufferField RETURNS CHARACTER
+  ( /* parameter-definitions */ 
+      ihBufField AS HANDLE)  FORWARD.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
+&IF DEFINED(EXCLUDE-bu_getMetaSchemaDataset) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD bu_getMetaSchemaDataset Procedure 
+FUNCTION bu_getMetaSchemaDataset RETURNS LONGCHAR
+  ( /* parameter-definitions */ 
+     ihDataset AS HANDLE)  FORWARD.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
+&IF DEFINED(EXCLUDE-bu_getMetaSchemaTable) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD bu_getMetaSchemaTable Procedure 
+FUNCTION bu_getMetaSchemaTable RETURNS LONGCHAR
+  ( /* parameter-definitions */
+      ihTable AS HANDLE )  FORWARD.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
 &IF DEFINED(EXCLUDE-formatDateTimeTzVal) = 0 &THEN
 
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD formatDateTimeTzVal Procedure 
@@ -117,62 +168,12 @@ FUNCTION formatDateVal RETURNS CHARACTER
 
 &ENDIF
 
-&IF DEFINED(EXCLUDE-getDatasetOutputJson) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD getDatasetOutputJson Procedure 
-FUNCTION getDatasetOutputJson RETURNS LONGCHAR
-  ( /* parameter-definitions */
-      iParName AS CHAR,
-      iDatasetHandle AS HANDLE,
-      iIncludeMetaSchema AS LOGICAL)  FORWARD.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
 &IF DEFINED(EXCLUDE-getLongCharVal) = 0 &THEN
 
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD getLongCharVal Procedure 
 FUNCTION getLongCharVal RETURNS LONGCHAR
   ( /* parameter-definitions */ 
       iParIndex AS INT)  FORWARD.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
-&IF DEFINED(EXCLUDE-getMetaSchemaBufferField) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD getMetaSchemaBufferField Procedure 
-FUNCTION getMetaSchemaBufferField RETURNS CHARACTER
-  ( /* parameter-definitions */ 
-      ihBufField AS HANDLE)  FORWARD.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
-&IF DEFINED(EXCLUDE-getMetaSchemaDataset) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD getMetaSchemaDataset Procedure 
-FUNCTION getMetaSchemaDataset RETURNS LONGCHAR
-  ( /* parameter-definitions */ 
-     ihDataset AS HANDLE)  FORWARD.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
-&IF DEFINED(EXCLUDE-getMetaSchemaTable) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION-FORWARD getMetaSchemaTable Procedure 
-FUNCTION getMetaSchemaTable RETURNS LONGCHAR
-  ( /* parameter-definitions */
-      ihTable AS HANDLE )  FORWARD.
 
 /* _UIB-CODE-BLOCK-END */
 &ANALYZE-RESUME
@@ -271,7 +272,7 @@ FUNCTION url-encode RETURNS CHARACTER
 /* ***************************  Main Block  *************************** */
 
 DATASET dsCallStack:READ-JSON("LONGCHAR",iCallParameters,"EMPTY") NO-ERROR.
-
+RUN  nodeJsMetaSchema.p PERSISTENT SET vhNodeJsMetaSchema.
 IF ERROR-STATUS:ERROR EQ TRUE 
     THEN oErrMsg = SUBST("ERROR(&1)->&2",ERROR-STATUS:GET-NUMBER(1),ERROR-STATUS:GET-MESSAGE(1)). 
 
@@ -286,7 +287,8 @@ IF oErrMsg EQ ""
 
 DELETE OBJECT vhTt NO-ERROR.
 DELETE OBJECT hCallObj NO-ERROR.
-ASSIGN vhTt = ? hCallObj = ?.
+DELETE OBJECT vhNodeJsMetaSchema NO-ERROR.
+ASSIGN vhTt = ? hCallObj = ? vhNodeJsMetaSchema = ?.
 
 /* _UIB-CODE-BLOCK-END */
 &ANALYZE-RESUME
@@ -350,9 +352,10 @@ PROCEDURE createOutputJsonMsg :
                 DO:
                     ASSIGN vDataHandle = vhBufferField:BUFFER-VALUE
                            oDynCallPayload  =
-                                   oDynCallPayload  + getDatasetOutputJson(ttCallParameter.ParName,vDataHandle,(AVAIL ttCallProgram AND ttCallProgram.includeMetaschema)).
+                                   oDynCallPayload  + DYNAMIC-FUNCTION("getDatasetOutputJson" IN vhNodeJsMetaSchema,
+                                                                       ttCallParameter.ParName,vDataHandle,(AVAIL ttCallProgram AND ttCallProgram.includeMetaschema)).
                 END.
-                /*WHEN 'DATASET-HANDLE'*/
+                /*WHEN 'DATASET-HANDLE' OR */
                 WHEN 'TABLE-HANDLE' THEN
                 DO:
                       ASSIGN vDataHandle = vhBufferField:BUFFER-VALUE.
@@ -374,10 +377,24 @@ PROCEDURE createOutputJsonMsg :
                               ELSE IF AVAIL ttCallProgram 
                                       AND ttCallProgram.includeMetaschema THEN
                               DO:
-                                  IF ttCallParameter.parDataType EQ "DATASET-HANDLE"
-                                      THEN ASSIGN vLongCharOutput = vLongCharOutput + ",~n" + getMetaSchemaDataset(vDataHandle).
+                                  IF ttCallParameter.parDataType EQ "DATASET-HANDLE" THEN
+                                  DO:
+                                      ASSIGN vLongCharOutput = TRIM(vLongCharOutput).
+                                      IF  vLongCharOutput MATCHES "*~{}}" THEN
+                                      DO:
+                                          ASSIGN vLongCharOutput = SUBSTR(vLongCharOutput,1,LENGTH(vLongCharOutput) - 2).
+                                          DO vI = 1 TO vDataHandle:NUM-BUFFERS:
+                                             ASSIGN vLongCharOutput = vLongCharOutput + SUBST('"&1" : []&2',
+                                                                                              vDataHandle:GET-BUFFER-HANDLE(vI):NAME,
+                                                                                              IF vI < vDataHandle:NUM-BUFFERS THEN "," ELSE "").
+                                          END.
+                                          ASSIGN vLongCharOutput = vLongCharOutput + "}".
+                                      END.
+                                      ASSIGN vLongCharOutput = vLongCharOutput + ",~n" + DYNAMIC-FUNCTION("getMetaSchemaDataset" IN vhNodeJsMetaSchema,vDataHandle).
+
+                                  END.
                                   ELSE IF ttCallParameter.parDataType EQ "TABLE-HANDLE"
-                                      THEN ASSIGN vLongCharOutput = vLongCharOutput + "," + getMetaSchemaTable(vDataHandle:DEFAULT-BUFFER-HANDLE).
+                                      THEN ASSIGN vLongCharOutput = vLongCharOutput + "," + DYNAMIC-FUNCTION("getMetaSchemaTable" IN vhNodeJsMetaSchema,vDataHandle:DEFAULT-BUFFER-HANDLE).
                               END.                
                       END.
                       ELSE ASSIGN oErrMsg = SUBST('&1 handle could not be retrieved for parameter "&2"',
@@ -934,6 +951,150 @@ END PROCEDURE.
 
 /* ************************  Function Implementations ***************** */
 
+&IF DEFINED(EXCLUDE-bu_getDatasetOutputJson) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION bu_getDatasetOutputJson Procedure 
+FUNCTION bu_getDatasetOutputJson RETURNS LONGCHAR
+  ( /* parameter-definitions */
+      iParName AS CHAR,
+      iDatasetHandle AS HANDLE,
+      iIncludeMetaSchema AS LOGICAL) :
+/*------------------------------------------------------------------------------
+  Purpose:  
+    Notes:  
+------------------------------------------------------------------------------*/
+/*
+  DEFINE VARIABLE vDatasetJsonOutputJson AS LONGCHAR   NO-UNDO.
+  DEFINE VARIABLE vTtJson                AS LONGCHAR    NO-UNDO.
+  DEFINE VARIABLE vI                     AS INTEGER     NO-UNDO.
+  DEFINE VARIABLE vJ                     AS INTEGER     NO-UNDO.
+
+  ASSIGN vDatasetJsonOutputJson = SUBST('~n "&1" : ~{~n "&2":',
+                                          iParName,
+                                          iDatasetHandle:NAME).
+  DO vI = 1 TO iDatasetHandle:NUM-BUFFERS:
+      iDatasetHandle:GET-BUFFER-HANDLE(vI):TABLE-HANDLE:WRITE-JSON("LONGCHAR",vTtJson,FALSE).
+      IF vI > 1 AND vTtJson BEGINS "~{" 
+          THEN  vTtJson = SUBSTR(vTtJson,2).
+      IF vI < iDatasetHandle:NUM-BUFFERS THEN
+      DO:
+          ASSIGN vJ = LENGTH(vTtJson).
+          IF SUBSTR(vTtJson,vJ,1) EQ "}" 
+              THEN vTtJson = SUBSTR(vTtJson,1,vJ - 1).    
+      END.
+      ASSIGN vDatasetJsonOutputJson  = vDatasetJsonOutputJson  + vTtJson.
+      IF vI < iDatasetHandle:NUM-BUFFERS 
+          THEN ASSIGN vDatasetJsonOutputJson = vDatasetJsonOutputJson + ",~n".
+  END.
+  IF iIncludeMetaSchema THEN
+      ASSIGN vDatasetJsonOutputJson = vDatasetJsonOutputJson + ",~n" + getMetaSchemaDataset(iDatasetHandle).
+  ASSIGN vDatasetJsonOutputJson = vDatasetJsonOutputJson + "~n}".
+  RETURN vDatasetJsonOutputJson.   /* Function return value. */
+*/
+END FUNCTION.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
+&IF DEFINED(EXCLUDE-bu_getMetaSchemaBufferField) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION bu_getMetaSchemaBufferField Procedure 
+FUNCTION bu_getMetaSchemaBufferField RETURNS CHARACTER
+  ( /* parameter-definitions */ 
+      ihBufField AS HANDLE) :
+/*------------------------------------------------------------------------------
+  Purpose:  
+    Notes:  
+------------------------------------------------------------------------------*/
+  DEFINE VARIABLE vMetaSchemaBufferField AS CHARACTER   NO-UNDO.
+  DEFINE VARIABLE vInitial AS CHARACTER     NO-UNDO.
+  DEFINE VARIABLE vDefaultValue AS CHARACTER   NO-UNDO.
+  ASSIGN vDefaultValue = ihBufField:DEFAULT-VALUE.
+  IF ihBufField:DATA-TYPE EQ "LOGICAL" THEN
+  DO:
+      IF vDefaultValue EQ "no" THEN vDefaultValue = "false".
+      IF vDefaultValue EQ "yes" THEN vDefaultValue = "true".
+
+  END.
+  ASSIGN vInitial      = IF LOOKUP(ihBufField:DATA-TYPE,"CHARACTER,DATE,INTEGER,DECIMAL") > 0 THEN '"' + vDefaultValue + '"' ELSE vDefaultValue.
+  IF vInitial EQ ? THEN vInitial = '""'.
+  ASSIGN vMetaSchemaBufferField = SUBST('"&1":~{',ihBufField:NAME) +
+                                  SUBST('"&1":"&2",',"dataType",ihBufField:DATA-TYPE) +
+                                  SUBST('"&1":&2,',"initial", vInitial) +
+                                  SUBST('"&1":"&2",',"format",ihBufField:FORMAT) +
+                                  SUBST('"&1":"&2"',"label",ihBufField:LABEL) +
+                                        "}".
+  RETURN vMetaSchemaBufferField.   /* Function return value. */
+
+END FUNCTION.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
+&IF DEFINED(EXCLUDE-bu_getMetaSchemaDataset) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION bu_getMetaSchemaDataset Procedure 
+FUNCTION bu_getMetaSchemaDataset RETURNS LONGCHAR
+  ( /* parameter-definitions */ 
+     ihDataset AS HANDLE) :
+/*------------------------------------------------------------------------------
+  Purpose:  
+    Notes:  
+------------------------------------------------------------------------------*/
+  /*
+  DEFINE VARIABLE vMetascemaStr AS LONGCHAR   NO-UNDO.
+  DEFINE VARIABLE i AS INTEGER     NO-UNDO.
+  ASSIGN  vMetascemaStr = SUBST('"&1MetaSchema":~{',ihDataset:NAME).
+  DO i = 1 TO ihDataset:NUM-BUFFERS:
+      ASSIGN vMetascemaStr = vMetascemaStr + getMetaSchemaTable(ihDataset:GET-BUFFER-HANDLE(i))
+                             + (IF i < ihDataset:NUM-BUFFERS THEN "," ELSE "").
+  END.
+  ASSIGN vMetascemaStr = vMetascemaStr + "}~n".
+  RETURN vMetascemaStr.   /* Function return value. */
+  */
+END FUNCTION.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
+&IF DEFINED(EXCLUDE-bu_getMetaSchemaTable) = 0 &THEN
+
+&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION bu_getMetaSchemaTable Procedure 
+FUNCTION bu_getMetaSchemaTable RETURNS LONGCHAR
+  ( /* parameter-definitions */
+      ihTable AS HANDLE ) :
+/*------------------------------------------------------------------------------
+  Purpose:  
+    Notes:  
+------------------------------------------------------------------------------*/
+  /*
+  DEFINE VARIABLE vTableMetaSchema AS LONGCHAR   NO-UNDO.
+  DEFINE VARIABLE i                AS INTEGER    NO-UNDO.
+  DEFINE VARIABLE vPostfix         AS CHARACTER   NO-UNDO.
+  IF NOT PROGRAM-NAME(2) MATCHES "*getMetaSchemaDataset*" 
+      THEN vPostfix = "MetaSchema".
+  ASSIGN vTableMetaSchema = SUBST('~n "&1":~{',ihTable:NAME + vPostfix).
+  DO i = 1 TO ihTable:NUM-FIELDS:
+      ASSIGN vTableMetaSchema = vTableMetaSchema + getMetaSchemaBufferField(ihTable:BUFFER-FIELD(i)) +
+                                IF i < ihTable:NUM-FIELDS THEN ",~n" ELSE "~n".
+
+  END.
+  ASSIGN vTableMetaSchema = vTableMetaSchema + "}~n". 
+  RETURN vTableMetaSchema.   /* Function return value. */
+  */
+END FUNCTION.
+
+/* _UIB-CODE-BLOCK-END */
+&ANALYZE-RESUME
+
+&ENDIF
+
 &IF DEFINED(EXCLUDE-formatDateTimeTzVal) = 0 &THEN
 
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION formatDateTimeTzVal Procedure 
@@ -997,52 +1158,6 @@ END FUNCTION.
 
 &ENDIF
 
-&IF DEFINED(EXCLUDE-getDatasetOutputJson) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION getDatasetOutputJson Procedure 
-FUNCTION getDatasetOutputJson RETURNS LONGCHAR
-  ( /* parameter-definitions */
-      iParName AS CHAR,
-      iDatasetHandle AS HANDLE,
-      iIncludeMetaSchema AS LOGICAL) :
-/*------------------------------------------------------------------------------
-  Purpose:  
-    Notes:  
-------------------------------------------------------------------------------*/
-  DEFINE VARIABLE vDatasetJsonOutputJson AS LONGCHAR   NO-UNDO.
-  DEFINE VARIABLE vTtJson                AS LONGCHAR    NO-UNDO.
-  DEFINE VARIABLE vI                     AS INTEGER     NO-UNDO.
-  DEFINE VARIABLE vJ                     AS INTEGER     NO-UNDO.
-
-  ASSIGN vDatasetJsonOutputJson = SUBST('~n "&1" : ~{~n "&2":',
-                                          iParName,
-                                          iDatasetHandle:NAME).
-  DO vI = 1 TO iDatasetHandle:NUM-BUFFERS:
-      iDatasetHandle:GET-BUFFER-HANDLE(vI):TABLE-HANDLE:WRITE-JSON("LONGCHAR",vTtJson,FALSE).
-      IF vI > 1 AND vTtJson BEGINS "~{" 
-          THEN  vTtJson = SUBSTR(vTtJson,2).
-      IF vI < iDatasetHandle:NUM-BUFFERS THEN
-      DO:
-          ASSIGN vJ = LENGTH(vTtJson).
-          IF SUBSTR(vTtJson,vJ,1) EQ "}" 
-              THEN vTtJson = SUBSTR(vTtJson,1,vJ - 1).    
-      END.
-      ASSIGN vDatasetJsonOutputJson  = vDatasetJsonOutputJson  + vTtJson.
-      IF vI < iDatasetHandle:NUM-BUFFERS 
-          THEN ASSIGN vDatasetJsonOutputJson = vDatasetJsonOutputJson + ",~n".
-  END.
-  IF iIncludeMetaSchema THEN
-      ASSIGN vDatasetJsonOutputJson = vDatasetJsonOutputJson + ",~n" + getMetaSchemaDataset(iDatasetHandle).
-  ASSIGN vDatasetJsonOutputJson = vDatasetJsonOutputJson + "~n}".
-  RETURN vDatasetJsonOutputJson.   /* Function return value. */
-
-END FUNCTION.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
 &IF DEFINED(EXCLUDE-getLongCharVal) = 0 &THEN
 
 &ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION getLongCharVal Procedure 
@@ -1060,101 +1175,6 @@ FUNCTION getLongCharVal RETURNS LONGCHAR
       ASSIGN vLongCharVal = vLongCharVal + ttLongcharChunk.chunkChar.
   END.
   RETURN vLongCharVal.   /* Function return value. */
-
-END FUNCTION.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
-&IF DEFINED(EXCLUDE-getMetaSchemaBufferField) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION getMetaSchemaBufferField Procedure 
-FUNCTION getMetaSchemaBufferField RETURNS CHARACTER
-  ( /* parameter-definitions */ 
-      ihBufField AS HANDLE) :
-/*------------------------------------------------------------------------------
-  Purpose:  
-    Notes:  
-------------------------------------------------------------------------------*/
-  DEFINE VARIABLE vMetaSchemaBufferField AS CHARACTER   NO-UNDO.
-  DEFINE VARIABLE vInitial AS CHARACTER     NO-UNDO.
-  DEFINE VARIABLE vDefaultValue AS CHARACTER   NO-UNDO.
-  ASSIGN vDefaultValue = ihBufField:DEFAULT-VALUE.
-  IF ihBufField:DATA-TYPE EQ "LOGICAL" THEN
-  DO:
-      IF vDefaultValue EQ "no" THEN vDefaultValue = "false".
-      IF vDefaultValue EQ "yes" THEN vDefaultValue = "true".
-
-  END.
-  ASSIGN vInitial      = IF LOOKUP(ihBufField:DATA-TYPE,"CHARACTER,DATE,INTEGER,DECIMAL") > 0 THEN '"' + vDefaultValue + '"' ELSE vDefaultValue.
-  IF vInitial EQ ? THEN vInitial = '""'.
-  ASSIGN vMetaSchemaBufferField = SUBST('"&1":~{',ihBufField:NAME) +
-                                  SUBST('"&1":"&2",',"dataType",ihBufField:DATA-TYPE) +
-                                  SUBST('"&1":&2,',"initial", vInitial) +
-                                  SUBST('"&1":"&2",',"format",ihBufField:FORMAT) +
-                                  SUBST('"&1":"&2"',"label",ihBufField:LABEL) +
-                                        "}".
-  RETURN vMetaSchemaBufferField.   /* Function return value. */
-
-END FUNCTION.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
-&IF DEFINED(EXCLUDE-getMetaSchemaDataset) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION getMetaSchemaDataset Procedure 
-FUNCTION getMetaSchemaDataset RETURNS LONGCHAR
-  ( /* parameter-definitions */ 
-     ihDataset AS HANDLE) :
-/*------------------------------------------------------------------------------
-  Purpose:  
-    Notes:  
-------------------------------------------------------------------------------*/
-  DEFINE VARIABLE vMetascemaStr AS LONGCHAR   NO-UNDO.
-  DEFINE VARIABLE i AS INTEGER     NO-UNDO.
-  ASSIGN  vMetascemaStr = SUBST('"&1MetaSchema":~{',ihDataset:NAME).
-  DO i = 1 TO ihDataset:NUM-BUFFERS:
-      ASSIGN vMetascemaStr = vMetascemaStr + getMetaSchemaTable(ihDataset:GET-BUFFER-HANDLE(i))
-                             + (IF i < ihDataset:NUM-BUFFERS THEN "," ELSE "").
-  END.
-  ASSIGN vMetascemaStr = vMetascemaStr + "}~n".
-  RETURN vMetascemaStr.   /* Function return value. */
-
-END FUNCTION.
-
-/* _UIB-CODE-BLOCK-END */
-&ANALYZE-RESUME
-
-&ENDIF
-
-&IF DEFINED(EXCLUDE-getMetaSchemaTable) = 0 &THEN
-
-&ANALYZE-SUSPEND _UIB-CODE-BLOCK _FUNCTION getMetaSchemaTable Procedure 
-FUNCTION getMetaSchemaTable RETURNS LONGCHAR
-  ( /* parameter-definitions */
-      ihTable AS HANDLE ) :
-/*------------------------------------------------------------------------------
-  Purpose:  
-    Notes:  
-------------------------------------------------------------------------------*/
-  DEFINE VARIABLE vTableMetaSchema AS LONGCHAR   NO-UNDO.
-  DEFINE VARIABLE i                AS INTEGER    NO-UNDO.
-  DEFINE VARIABLE vPostfix         AS CHARACTER   NO-UNDO.
-  IF NOT PROGRAM-NAME(2) MATCHES "*getMetaSchemaDataset*" 
-      THEN vPostfix = "MetaSchema".
-  ASSIGN vTableMetaSchema = SUBST('~n "&1":~{',ihTable:NAME + vPostfix).
-  DO i = 1 TO ihTable:NUM-FIELDS:
-      ASSIGN vTableMetaSchema = vTableMetaSchema + getMetaSchemaBufferField(ihTable:BUFFER-FIELD(i)) +
-                                IF i < ihTable:NUM-FIELDS THEN ",~n" ELSE "~n".
-
-  END.
-  ASSIGN vTableMetaSchema = vTableMetaSchema + "}~n". 
-  RETURN vTableMetaSchema.   /* Function return value. */
 
 END FUNCTION.
 

@@ -1,27 +1,26 @@
-var debug		= require('debug'),
+
+var Buffer      = require('./buffer.js'),
+    debug		= require('debug'),
 	log			= debug('n4p:temptable');
 
 function TempTable( iDataset, iName, ttRecordArray, iMetaSchema ){
 	log( "tt create", iName );
-
-	this.dataset            = null;
-
-	iDataset && (this.dataset     = iDataset.dataset);
-
-	this.records            = ttRecordArray;
-	this.name               = iName;
-	this.metaSchema         = iMetaSchema;
-	this.currentRecord      = {};
-	this.currentRecordIndex = -1;
-
-	this.buffer             = new Buffer( this, this.metaSchema );
+	this.dataset=null;
+	if(iDataset){
+       this.dataset=iDataset.dataset;
+	}
+	this.records=ttRecordArray;
+	this.name=iName;
+	this.metaSchema=iMetaSchema;
 	
-	return this;
+	this.currentRecord={};
+	this.currentRecordIndex=-1;
+	this.buffer = new Buffer( this, this.metaSchema);
+	return this;	
 }
 
 TempTable.prototype.available = function() {
-	log( "tt:available" );
-	
+	log( "tt:available" );	
 	return (this.currentRecordIndex>=0);
 };
 
@@ -51,7 +50,11 @@ TempTable.prototype.bufferCopy = function(iRecordJson){
 		if(typeof iRecordJson === "string"){
 			iRecordJson=JSON.parse(iRecordJson);
 		}
-		if(typeof iRecordJson === "object"){
+		if(iRecordJson instanceof Buffer){
+			var jsonObj=iRecordJson.writeJson();
+			jsonObj=JSON.parse(jsonObj);
+			this.bufferCopy(jsonObj);
+		}else if(typeof iRecordJson === "object"){
 		   for(var prop in iRecordJson){
 			   if(this.buffer.$(prop)){
 				   this.buffer.$(prop).bufferValue(iRecordJson[prop]);
@@ -75,7 +78,11 @@ TempTable.prototype.bufferDelete = function(){
 	}else if(this.currentRecordIndex> this.records.length-1){
 		this.records.length=this.records.length-1;
 	}
-	return deletedRecordJson[0];
+	if(deletedRecordJson[0]){
+		return deletedRecordJson[0];
+	}else{
+		return null;
+	}
 };
 
 TempTable.prototype.copyTempTable = function(empty){
@@ -93,10 +100,17 @@ TempTable.prototype.copyTempTable = function(empty){
 	return copyTempTable;
 };
 
-TempTable.prototype.emptyTemptable = function(){
+TempTable.prototype.emptyTempTable = function(){
 	log( "tt:emptyTempTable" );
-
+	if(this.records){
+		while(this.records.length>0){
+			this.records.splice(0);
+		}
+	}
+	this.currentRecordIndex=-1;
+/*
 	this.records	= [];
+*/	
 };
 
 TempTable.prototype.forEach = function(callback){
