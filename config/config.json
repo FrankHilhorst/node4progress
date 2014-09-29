@@ -3,6 +3,7 @@
 	"AppserverUserName" 		: "",
 	"AppserverUserPassword" 	: "",
 	"AppserverSessionModel"     : "State-less",
-	"WinstoneSvrPort"           : 8087
+	"WinstoneSvrPort"           : 8087,
+	"DateFormat"                : "dd/mm"
 }
 

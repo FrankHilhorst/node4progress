@@ -3,9 +3,10 @@ var Buffer      = require('./buffer.js'),
     debug		= require('debug'),
 	log			= debug('n4p:temptable');
 
-function TempTable( iDataset, iName, ttRecordArray, iMetaSchema ){
+function TempTable( iDataset, iName, ttRecordArray, iMetaSchema,iDateFormat ){
 	log( "tt create", iName );
-	this.dataset=null;
+	this.dateFormat=iDateFormat;
+	this.dataset=null;	
 	if(iDataset){
        this.dataset=iDataset.dataset;
 	}
@@ -15,7 +16,7 @@ function TempTable( iDataset, iName, ttRecordArray, iMetaSchema ){
 	
 	this.currentRecord={};
 	this.currentRecordIndex=-1;
-	this.buffer = new Buffer( this, this.metaSchema);
+	this.buffer = new Buffer( this, this.metaSchema,this.dateFormat);
 	return this;	
 }
 
@@ -93,7 +94,7 @@ TempTable.prototype.copyTempTable = function(empty){
     copyTempTableJsonObj.metaSchema = this.metaSchema;
 	var copyTempTableStr = JSON.stringify(copyTempTableJsonObj);
 	copyTempTableJsonObj = JSON.parse(copyTempTableStr);
-    var copyTempTable = new TempTable(null,this.name,copyTempTableJsonObj[this.name],copyTempTableJsonObj.metaSchema);
+    var copyTempTable = new TempTable(null,this.name,copyTempTableJsonObj[this.name],copyTempTableJsonObj.metaSchema,this.dateFormat);
     if(empty === true){
         copyTempTable.emptyTempTable();		
 	}
@@ -189,6 +190,6 @@ TempTable.prototype.jsonObjectEmpty = function(jsonObj){
 	return jsonObjectEmpty;	
 };
 
-module.exports	= function( iDataset,iName,ttRecordArray,iMetaSchema ) {
-    return new TempTable( iDataset,iName,ttRecordArray,iMetaSchema );
+module.exports	= function( iDataset,iName,ttRecordArray,iMetaSchema,iDateFormat ) {
+    return new TempTable( iDataset,iName,ttRecordArray,iMetaSchema,iDateFormat );
 }

@@ -3,9 +3,14 @@ var moment      = require('moment'),
 	numeral     = require('numeral')
 	log			= debug('n4p:bufferfield');
 
-function BufferField(){
+function BufferField(iDateFormat){
 	log( "BF create" );
-
+    this.dateFormat     = "";
+    if(iDateFormat.toLowerCase() === 'dd/mm'){
+    	this.dateFormat="DD/MM";
+    }else{
+    	this.dateFormat="MM/DD";
+    }
 	this.currentRecord  = null;
 	this.name           = "";
 	this.value          = "";
@@ -80,9 +85,24 @@ BufferField.prototype.$ = function(iAttribute){
 
 BufferField.prototype.bufferValue = function( iValue ) {
 	log( "BF:bufferValue", this.name, iValue );
-
+    var dateStr = "";
+    var yr="";
+    var month="";
+    var day="";
 	if( this.dataType.toLowerCase() === "date" ){
-		this.currentRecord[this.name]	= moment( iValue ).format( "MM/DD/YYYY" );
+		if(iValue instanceof Date){
+			yr=iValue.getFullYear();
+			month=iValue.getMonth()+1;
+			month=month.toString();
+			if(month.length<=1){month="0"+month;}
+			day=iValue.getDate();
+			day=day.toString();
+			if(day.length<=1){day="0"+day;}
+			dateStr=yr+"-"+month+"-"+day;
+		}else{
+			dateStr=iValue;
+		}
+		this.currentRecord[this.name]	= moment(dateStr).format( "YYYY-MM-DD" );
 	}else{
 		this.currentRecord[this.name]   = iValue;
 	}
@@ -130,7 +150,12 @@ BufferField.prototype.formattedValue = function() {
 		case "date":
 			formattedValue=this.formattedValueDate();
 			break;
-			
+		case "datetime":
+			formattedValue=this.formattedValueDateTime();
+			break;
+		case "datetime-tz":
+			formattedValue=this.formattedValueDateTime();
+			break;						
 		default:
 	    	formattedValue=this.value;
 	    	break;
@@ -177,149 +202,81 @@ BufferField.prototype.formattedValueNumber = function(){
 	return formattedValue;
 };
 
-BufferField.prototype.formattedValueNumber2 = function(){
-	log( "BF:formattedValueNumber2" );
-
-	var formattedValue  = this.value,
-	    value           = this.value,
-        str             = value.toString(),
-	    char            = "";
-	var i = 0;
-	var j = 0;
-	var k = 0;
-
-	if(this.dataType.toLocaleLowerCase()=="decimal"){
-		var decimalPrecision=0;
-		if(this.format.indexOf(".",0)>=0){
-	       decimalPrecision=this.format.length-this.format.toString().indexOf('.',0)-1;
-		}
-		value.toFixed(decimalPrecision);
-		str=value.toString();
-		k=str.lastIndexOf(".");
-		if(k==-1){
-			k=0;
-			value+=".";
-		}else{
-			++k;
-			k=str.length-k;
-		}
-		for(i=k;i<decimalPrecision;i++){
-			value+="0";
-		}
-	}		
-	formattedValue="";		
-	for(i=0;i<this.format.length;i++){
-		char=this.format.substring(i,i+1);			
-		if(char==">"){formattedValue+=" ";}
-		else if(char==","){formattedValue+=",";}
-		else if(char=="9"){formattedValue+="0";}
-		else if(char=="."){formattedValue+=".";}
-		else if(char=="-"){formattedValue+="-";}
-    }
-	k=0;
-	for(i=value.toString().length - 1;i>=0;i--){
-	    j=length-value.toString().length+i+1-k;
-		char=formattedValue.substring(j-1,j);
-		if(char==","){
-			j--;
-			k++;
-		}
-		formattedValue=formattedValue.substring(0,j-1)+value.toString().substring(i,i+1)+formattedValue.substring(j,length);
-	}
-	for(i=0;i<formattedValue.length-1;i++){
-		if(formattedValue.substring(i,i+1)=="," &&
-		   (formattedValue.substring(i+1,i+2)==" " ||
-			i == 0 ||
-		   formattedValue.substring(i-1,i)==" ")){
-		   formattedValue=formattedValue.substring(0,i) + " " + formattedValue.substring(i+1,formattedValue.length);	
-		}
+BufferField.prototype.formattedValueDateTime = function(){
+	var formattedValue   = "";
+	var dateStr="";
+	var timeStr="";
+	var amPmStr="";
+	var timeZoneStr="";	
+	var formatStr="";
+	var formatStr=this.format.toLocaleLowerCase();
+	var i=formatStr.indexOf(" ");
+	//console.log("this.value"+this.value);
+	if(i>0){dateStr=formatStr.substring(0,i);}
+	timeStr=formatStr.substring(i+1,formatStr.length);
+	if(timeStr.substring(timeStr.length-6,timeStr.length)==="+hh:mm"){
+		timeZoneStr=" Z";
+		timeStr=timeStr.substring(0,timeStr.length-6);
+		timeStr=timeStr.trim();
+	};
+	if(timeStr.substring(timeStr.length-3,timeStr.length)===" am"){
+		amPmStr=" a";
+		timeStr=timeStr.substring(0,timeStr.length-3);
+	}else{
+		timeStr="HH:"+timeStr.substring(3,timeStr.length);
+	};
+	if(timeStr.substring(timeStr.length-4,timeStr.length)===".sss"){
+		timeStr=timeStr.substring(0,timeStr.length-4)+".SSS";
 	}	
-	
-	if(this.value>=0){
-		formattedValue=formattedValue.replace("-"," ");
-	}else if(this.format.substring(0,1)=="-" &&
-			this.format.length>=2 &&
-			this.format.substring(1,2) == ">"){
-		formattedValue=" "+formattedValue.substring(1,formattedValue.length);
-	}		
+	switch(dateStr){
+		case "99/99/9999":
+			dateStr=this.dateFormat+"/YYYY";
+			break;	
+		case "99/99/99":
+			dateStr=this.dateFormat+"/YY";
+			break;	
+		case "99-99-9999":
+			dateStr=this.dateFormat.replace("/","-")+"-YYYY";
+			break;	
+		case "99-99-99":
+			dateStr=this.dateFormat.replace("/","-")+"-YY";
+			break;				
+	}	
+	formatStr=dateStr;
+	if(timeStr!==""){
+		formatStr+=" ";
+	}
+	formatStr+=timeStr+amPmStr+timeZoneStr;
+	//console.log("formatStr->"+formatStr);
+	if(timeZoneStr!=""){
+		formattedValue=moment(this.value).zone(this.value).format(formatStr);
+	}else{
+		formattedValue=moment(this.value).format(formatStr);
+	}
 	return formattedValue;
 };
 
 BufferField.prototype.formattedValueDate = function(){
 	log( "BF:formattedValueDate" );
-
-	return moment( this.value ).format( (this.format == "99/99/99") ? "DD/MM/YY" : "DD/MM/YYYY" );
+    var dateStr=this.format;
+	switch(dateStr){
+		case "99/99/9999":
+			dateStr=this.dateFormat+"/YYYY";
+			break;	
+		case "99/99/99":
+			dateStr=this.dateFormat+"/YY";
+			break;	
+		case "99-99-9999":
+			dateStr=this.dateFormat.replace("/","-")+"-YYYY";
+			break;	
+		case "99-99-99":
+			dateStr=this.dateFormat.replace("/","-")+"-YY";
+			break;				
+	}	
+	return moment( this.value ).format(dateStr);
+	//return moment( this.value ).format( (this.format == "99/99/99") ? this.dateFormat+"/YY" : this.dateFormat+"/YYYY" );
 };
 
-BufferField.prototype.formattedValueDateTime = function(){
-	log( "BF:formattedValueDateTime" );
-
-	var day = "";
-	var month = "";
-	var year = "";
-	var formattedValue = "";
-	var valueTimeRemainder = "";
-	var formatTimeRemainder = "";
-	var amPm ="" ;
-	var miliSeconds = "";
-	if(typeof this.value === "string"){
-		/*.. the stored format now is YYYY-MM-DDTHH:MM:SS.sss .......*/
-		if(this.format.length>=10 && this.value.length>=10){
-			var dateArray = this.value.substring(0,10).split("-");
-			if(dateArray.length === 3){
-				if(dateArray[1].length<2){dateArray[1]="0"+dateArray[1];}
-				if(dateArray[2].length<2){dateArray[2]="0"+dateArray[2];}
-				if(this.format.substring(0,10)==="99/99/9999"){
-					formattedValue = dateArray[1] + "/" + dateArray[2] + "/" + dateArray[0];
-					valueTimeRemainder=this.value.substring(11,this.format.length);
-					formatTimeRemainder=this.format.substring(11,this.format.length);					
-				} else if(this.format.substring(0,10)==="99/99/99"){
-					formattedValue = dateArray[1] + "/" + dateArray[2] + "/" + dateArray[0].substring(2,4);
-					valueTimeRemainder=this.value.substring(9,this.format.length);
-					formatTimeRemainder=this.format.substring(9,this.format.length);
-				} else if(this.format.substring(0,10)==="99-99-9999"){
-					formattedValue = dateArray[1] + "-" + dateArray[2] + "-" + dateArray[0];					
-					valueTimeRemainder=this.value.substring(11,this.format.length);
-					formatTimeRemainder=this.format.substring(11,this.format.length);
-				} else if(this.format.substring(0,10)==="99-99-99"){
-					formattedValue = dateArray[1] + "-" + dateArray[2] + "-" + dateArray[0].substring(2,4);
-					valueTimeRemainder=this.value.substring(9,this.format.length);
-					formatTimeRemainder=this.format.substring(9,this.format.length);
-				}
-				var timeArray = valueTimeRemainder.substring(0,8).split(":");
-				if(timeArray.length === 3){
-					if(timeArray[0].length<2){timeArray[0]="0"+timeArray[0];}
-					if(timeArray[1].length<2){timeArray[1]="0"+timeArray[1];}
-					if(timeArray[2].length<2){timeArray[2]="0"+timeArray[2];}
-					if(formatTimeRemainder.substring(formatTimeRemainder.length-2,formatTimeRemainder.length).toLowerCase()==="am"){
-						if(timeArray[0]>=13){
-							timeArray[0]=timeArray[0]-12;
-							if(timeArray[0].length<2){timeArray[0]="0"+timeArray[0];}
-							amPm=" PM";
-						}else{
-							amPm=" AM";
-						}
-						miliSeconds=this.value.substring(this.format.length-4,this.format.length);
-					}
-					formattedValue+=" "+timeArray[0]+":"+timeArray[1]+":"+timeArray[2]+"."+miliSeconds+amPm;
-				}
-			}			
-		} 
-	} else if(this.value instanceof "Date"){
-		month = this.value.getMonth() + 1;
-		if(month.length < 2){month = "0" + month;}
-		day=this.value.getDate();
-		if(day.length < 2){day = "0" + day;}
-		year=this.value.getFullYear();
-		if(this.format === "99/99/99"){
-			formattedValue=month + "/" + day + "/" + year.substring(2, 4);
-		}else if(this.format === "99/99/9999"){
-			formattedValue=month + "/" + day + "/" + year;
-		}
-	}
-	return formattedValue;
-};
-
-module.exports	= function() {
-    return new BufferField();
+module.exports	= function(iDateFormat) {
+    return new BufferField(iDateFormat);
 };

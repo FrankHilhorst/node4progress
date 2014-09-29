@@ -3,13 +3,13 @@ var TempTable       = require('./temptable.js'),
 	log				= debug('n4p:dataset');
 	
 
-function Dataset( iDatasetNm , iJsonObj ) {
-	log( "ds create" );
-
+function Dataset(iDatasetNm,iJsonObj,iDateFormat) {
+	//log( "ds create" );
+	this.dateFormat = iDateFormat;
 	this.dataset	= null;
 	this.metaSchema	= null;
 	this.name		= "";
-	this.rootName	= "";
+	this.rootName	= "";	
 	this.tempTables	= {};
 	this.getDataset(iDatasetNm,iJsonObj);
 	if( this.name === "" ){
@@ -35,46 +35,9 @@ Dataset.prototype.$ = function(ttName){
 		}
 	}
 	if(! this.tempTables[ttNm]){
-		this.tempTables[ttNm]=new TempTable(this,ttNm,targetTable,this.metaSchema[ttNm]);
+		this.tempTables[ttNm]=new TempTable(this,ttNm,targetTable,this.metaSchema[ttNm],this.dateFormat);
 	}
 	return this.tempTables[ttNm];
-
-	/*
-	var targetTable     = null,
-	    datasetContents = null,
-	    ttNm            = "";
-
-	
-    ttName      = ttName.toLowerCase();
-
-    this.dataset.some( function(item) {
-		datasetContents = item;
-		return true;
-    });
-    
-	var ttNm = "";
-	for(tt in datasetContents){		
-		if(tt.toString().toLowerCase() == ttName.toLowerCase()){
-			targetTable = datasetContents[tt];
-			ttNm=tt;
-			break;
-		}
-	}
-  
-    datasetContents.some( function( item, tt ) {
-        if ( tt.toString().toLowerCase() == ttName ) {
-			targetTable = datasetContents[tt];
-			ttNm        = tt;
-			return true;
-        }
-        return false;
-    });
-	if( !this.tempTables[ttNm] ){
-		this.tempTables[ttNm]   = new TempTable( this, ttNm, targetTable, this.metaSchema[ttNm] );
-	}
-	
-	return this.tempTables[ttNm];
-	*/
 };
 
 Dataset.prototype.copyDataset = function(empty){
@@ -86,7 +49,7 @@ Dataset.prototype.copyDataset = function(empty){
 	copyDatasetJsonObj[ this.rootName ]     = JSON.parse( this.writeJson() );
     copyDatasetJsonObj[ this.rootName ][ this.name + "MetaSchema" ] = JSON.parse( JSON.stringify( this.metaSchema ) );
     
-    copyDataset = new Dataset( this.name, copyDatasetJsonObj );
+    copyDataset = new Dataset( this.name, copyDatasetJsonObj,this.dateFormat );
 
 	if(empty){
 		copyDataset.emptyDataset();		
@@ -146,6 +109,6 @@ Dataset.prototype.writeJson = function(){
 	return writeJson;
 };
 
-module.exports	= function( name, obj ) {
-    return new Dataset( name, obj );
+module.exports	= function( name, obj,dateFormat ) {
+    return new Dataset( name, obj, dateFormat );
 };

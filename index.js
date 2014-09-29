@@ -151,7 +151,6 @@ handlerCallPromise.prototype.executeHandler = function(){
 
 function node4progress(conf) {
 	log( "n4p create" );
-
 	var that = this;
 	if(conf !== null){
        this.conf = conf;
@@ -164,13 +163,15 @@ function node4progress(conf) {
 	this.handlerPromises	= [];
 	this.datasetPromises	= [];
 	this.tempTablePromises	= [];
-	this.spawn				= require('child_process').spawn;	
+	this.spawn				= require('child_process').spawn;
+	//this.spawn				= require('child_process').exec;
 	this.winstoneStarted	=false;
 	this.appserverUrl		= this.conf.AppserverUrl;
 	this.appserverUserName	= this.conf.AppserverUserName;
 	this.appserverUserPassword = this.conf.AppserverPassword;
 	this.appserverSessionModel = this.conf.AppserverSessionModel;
 	this.winstoneSvrPort	= this.conf.WinstoneSvrPort;
+	this.dateFormat         = this.conf.DateFormat;
 	this.winstone			= null;
 	this.env				= process.env;
 	this.startWinstone();
@@ -439,11 +440,11 @@ node4progress.prototype.prepareAppsvrCall = function(dsCallStack,callback){
 
 node4progress.prototype.getDataset = function(iDsName,iDynCallJson){
 	log( "getDataset", iDsName );
-
+	var dateFormatStr=this.dateFormat;
 	if(typeof iDynCallJson == "string"){
 		iDynCallJson=JSON.parse(iDynCallJson);
 	}
-	var dataset = new Dataset( iDsName, iDynCallJson );
+	var dataset = new Dataset(iDsName, iDynCallJson,dateFormatStr);
 	return dataset;
 };
 
@@ -464,7 +465,7 @@ node4progress.prototype.getTempTableS1 = function(iTtNm,iJsonObj){
 	for(var prop in iJsonObj){
 		if(iJsonObj[prop][iTtNm] &&
 		   iJsonObj[iTtNm+"MetaSchema"]){
-			  tt = new TempTable(null,iTtNm,iJsonObj[prop][iTtNm],iJsonObj[iTtNm+"MetaSchema"]);
+			  tt = new TempTable(null,iTtNm,iJsonObj[prop][iTtNm],iJsonObj[iTtNm+"MetaSchema"],this.dateFormat);
 		 }else if(typeof iJsonObj === "object"){
 			 tt=this.getTempTableS1(iTtNm, iJsonObj[prop]);
 		 }
