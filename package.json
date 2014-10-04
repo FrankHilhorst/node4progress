@@ -1,6 +1,6 @@
 {
   "name": "node4progress",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "Connector to Progress Appserver",
   "author": "Frank Hilhorst - Progressive Consulting Inc.",
   "main": "index.js",
@@ -13,7 +13,7 @@
     "http": "*"
   },
   "engines": {
-    "node": "0.10.x"
+    "node": ">=0.10.x"
   },
   "repository": {
     "type": "git",

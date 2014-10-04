@@ -18,15 +18,13 @@ This documentations contains of the following sections:
 
 5.  Code samples
 
-6.  Using
-
-7.  The node4progress dataset object
+6.  The node4progress dataset object
 
     1.  Object structure of the node4progress dataset object
 
     2.  Installing and running the node4progress dataset examples
 
-8.  Troubleshooting
+7.  Troubleshooting
 
 # 1. Introduction:
 
@@ -59,9 +57,9 @@ consume the data.
 
     2.  As a dataset and/or temp-table object
 
-        -   Using this approach the data is consumed in javascript
-            objects that have similar attributes, methods and features
-            as the PROGRESS prodataset and temp-table objects
+        -   Using this approach the data is consumed in a set of
+            javascript objects that have similar attributes, methods and
+            features as the PROGRESS prodataset and temp-table objects
 
 All the features mentioned above will be covered in detail in the
 section "how to use"
@@ -83,19 +81,34 @@ To use the Node4Progress bridge the following components are required:
 
     -   Preferably run the installation as root or as administrator
 
+Out of the box node4progress comes with a set of examples configured to
+run against an appserver running on an amazon cloud computer. If you you
+just want to try out node4progress and you don't want to bother with
+having to set up an appserver to run the examples, you will be able to
+run the javascript example programs straight out of the box against the
+appserver running in the cloud. In this case just skip the installation
+steps below having to do with configuring and setting up the appserver.
+
 ### Installation steps:
 
-By the time you are reading this you have probably already figured out
-that node4progress is installed by executing one of the following
-statements from the command line.
+-   Create a directory node4progressTest and make this directory the
+    current directory
 
--   npm install node4progress -g
+    -   e.g.
+
+        -   mkdir /var/tmp/node4progressTest
+
+        -   cd /var/tmp/node4progressTest
+
+-   Type in the following command from the command line
 
     -   for a global install
 
--   npm install node4progress
+        -   npm install node4progress -g
 
-    -   for an install in the local directory
+    -   for a local install into the node4progressTest directory
+
+        -   npm install node4progress
 
 After the install execute the following steps:
 
@@ -126,24 +139,54 @@ After the install execute the following steps:
     2.  Configure your appserver to connect to the sports database (not
         the sports2000 database)
 
-    3.  Create a directory node4progressTest and copy the javascript
-        examples in the Examples directory to this directory
+4.  Copy the javascript examples in the
+    node\_modules/node4progress/Examples directory into the
+    node4progressTest directory
 
-        1.  If you are using a local install then copy the node4progress
-            directory into the node4progressTest directory
+    -   Make sure the config subdirectory with the configuration file
+        config.json is copied over as well
+
+        -   Should result in the following directory structure for a
+            local install
+
+            node4progressTest/
+
+            node4progressTest/config
+
+            node4progressTest/node\_modules
+
+            node4progressTest/node\_modules/node4progress
+
+        -   Should result in the following directory structure for a
+            global install
+
+            node4progressTest/
+
+            node4progressTest/config
+
+You are now able to run test examples against the Appserver running in
+the cloud:
+
+-   For example if you type in the following command
+
+    node testDatasetCustomer.js
+
+    -   You should get the following result
+
+![][]
 
 ### Configuration steps:
 
 Execute the following steps:
 
-1.  Copy the config.json file into your node4progressTest directory
+1.  Pull the config/config.json file up in a text editor
 
     -   The contents of this file look as follows:
 
     <!-- -->
 
         {
-        "AppserverUrl":"APPSERVERDC://192.168.56.101:4090",
+        "AppserverUrl":"APPSERVERDC://204.236.218.31:3190",
         "AppserverUserName": "",
         "AppserverUserPassword": "",
         "AppserverSessionModel": "State-less",
@@ -195,7 +238,7 @@ Open up a browser and point to the following url:
 If this results in a web page that looks like this then yoiur
 configuration is correct:
 
-![][]
+![][1]
 
 # 4. Usage
 
@@ -247,7 +290,7 @@ JSON structure passed as a string:
 In node the code for invoking a handler looks like this:
 
     var conf = require("./config/config.json");
-    var node4progress = require("node4progressHttp")(null);
+    var node4progress = require("node4progressHttp")(conf);
     var handler="handlers/CustomerHandler.p";
     var inputPars = 'NumCustomersToPull=2';
     node4progress.callHandler(handler,inputPars,true,function(err,result){
@@ -376,7 +419,7 @@ format to an appserver procedure the table-handle or dataset-handle
 needs to have a metaschema structure before the appserver procedure is
 invoked. This as opposed to calling an appserver procedure that passes
 the data as output only where the metaschema structure can be inherited
-from the program that is called.
+from the appserver program that is called.
 
 So in order to call an appserver procedure that takes a temp-table of a
 dataset as input or input-output you need to create a schema provider
@@ -452,7 +495,7 @@ Below is an example of a schema provider for a dataset:
         console.log(result);
     };
 
-# 7. The node4progress dataset object
+# 6. The node4progress dataset object
 
 If data needs to be passed as input to an appserver procedure that
 expects either a dataset or a temp-table as input then it is essential
@@ -461,7 +504,7 @@ format. For this reason node4progress provides a dataset object. If you
 interact with the data through the methods provided with the dataset
 object then the data will be maintained in exactly the correct format.
 
-## 7.1 Object structure of the node4progress dataset object
+## 6.1 Object structure of the node4progress dataset object
 
 Node4progress comes with a dataset object that is modelled after the
 PROGRESS prodataset object.
@@ -470,8 +513,8 @@ The node4progress dataset architecture comes with the following objects,
 attributes and methods.
 
 +-----------------------+-----------------------+-----------------------+-----------------------+
-| **Object**            | \*\*Methods/Attribute | **Purpose**           | **Input Parameters**  |
-|                       | s                     |                       |                       |
+| **Object**            | **Methods/Attributes* | **Purpose**           | **Input Parameters**  |
+|                       | *                     |                       |                       |
 +-----------------------+-----------------------+-----------------------+-----------------------+
 | Dataset               | \$                    | Returns a temp-table  | -\>TableName          |
 |                       |                       | object: Example:      |                       |
@@ -580,13 +623,21 @@ attributes and methods.
 |                       |                       | label & screenValue)  |                       |
 +-----------------------+-----------------------+-----------------------+-----------------------+
 
-## 7.2 Installing and running the node4progress dataset examples
+## 6.2 Running the node4progress dataset examples
 
 A set of examples is provided that show how to use the node4progress
 dataset object.
 
-Node4Progress comes with configuration that allows for these examples to
-be run against an appserver running on an Amazon clould computer.
+As explained before in paragraph 3 (installation and configuration)
+Node4Progress comes out of the box with a configuration that allows for
+these examples to be run against an appserver running on an Amazon
+clould computer. The examples are written to show some basic features of
+the dataset and then exit. Though generally the expected use of
+node4progress would be as part of a node based server process, stripping
+the examples down to the essentials seemed the shortest and easiest way
+to illustrate how to use the dataset.
+
+The examples are centered around the following dataset features:
 
 -   How to navigate the data in a dataset object
 
@@ -609,73 +660,69 @@ be run against an appserver running on an Amazon clould computer.
 Each example lists in the header which dataset methods it uses and
 contains comments what each statement accomplishes.
 
-To run this examples execute the following steps:
+For further instructions on how to get setup to run the examples please
+refer to paragraph 3.
 
--   Make sure that that you that you have installed and configured
-    node4progress as explained in paragraph 3 "Installation and
-    configuration"
-
--   Optionally create an appserver that connects to the sports database
-    (not the sports2000 database)
-
-    -   The examples are coded against the sports database and will not
-        works against the sports2000 database
-
--   Alternativlely you can run the examples against an appserver in the
-    cloud on IP address
-
-    -   The connection parameters are defined in the
-        ./config/config.json file
-
--   Open up a DOS or a UNIX shell and type in the following command
-
-    -   export NODE\_PATH=[node\_modules directory where node4progress
-        is installed]
-
-        -   For example if you have installed node4progress locally in
-            the /var/tmp directory
-
-            -   export NODE\_PATH=/var/tmp/node\_modules
-
--   Edit the following configuration file
-
-    -   node\_modules/node4progress/Examples/config/config.json
-
-        -   Configure the following parameters to point to your
-            appserver
-
-            -   AppserverUrl
-
-            -   AppserverUserName
-
-            -   AppserverUserPassword
-
-            -   AppserverSessionModel
-
-                -   For more details see paragraph 3
-
--   Change directory to the examples directory
-
-    -   Again assuming that you have installed node4progress in the
-        /var/tmp directory
-
-        -   cd /var/tmp/node\_modules/node4progress/Examples
-
--   Now you can execute the examples from the command line as follows
-
-    -   To execute testDatasetCustomer.js
-
-        -   node testDatasetCustomer.js
-
-            -   In order to exit out of the example press CTRL-C
-
-    -   To execute custAddDs.js
-
-        -   node custAddDs.js
-
-# 8. Troubleshooting
+# 7. Troubleshooting
 
 The following are known issues that are currently being addressed:
+
+-   Known installation problems node4progress
+
+    -   Installation on Linux fails with message that node version is
+        not supported for node4progress
+
+        -   On linux with the following node is generally installed with
+            the following commands
+
+            -   To install node
+
+                -   sudo apt-get install nodejs
+
+            -   To install npm
+
+                -   sudo apt-get install npm
+
+        -   This may however not install the latest version of node that
+            is needed (version 10)
+
+            -   You can get the version of node that is installed with
+                the following command
+
+                -   node -v
+
+        -   If you do not have the latest version of node you can can
+            iinstall it with npm with the following commands
+
+            -   sudo npm cache clean -f
+
+            -   sudo npm install -g n
+
+            -   sudo n stable
+
+    -   Node4progress install failed with a "shashum check failed" error
+
+        -   This is more likely to happen if you have had node installed
+            for a while and have allready installed a number of other
+            modules
+
+            -   In this case reset you npm configuration as follows:
+
+                -   npm cache clean
+
+                -   npm config set registry http://registry.npmjs.org/
+
+                -   npm set registry http://registry.npmjs.org/
+
+            -   Then try to install node4progress again with
+
+                -   On windows (run as administrator)
+
+                -    npm install node4progress
+
+                -   On Linux/Unix
+
+                -    sudo npm install node4progress
 
 -   On exiting a program that uses node4progress it sometimes takes a
     while for the winstone port to be released
@@ -697,4 +744,7 @@ The following are known issues that are currently being addressed:
 
             -   When you run the program again the error will disappear
 
-  []: ConfigScreenshot.png
+-   Installing node4progress on linux gives an error
+
+  []: ExampleOutput.png
+  [1]: ConfigScreenshot.png
