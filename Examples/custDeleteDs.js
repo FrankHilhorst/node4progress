@@ -26,8 +26,8 @@ var node4progress = require("node4progress")(conf);
 node4progress.setAppsvrProc("Examples/CustUpdDs.p","",false,true);
 // Define parameters for appserver procedure to call
 node4progress.setParameter("Imode","character","input","GetCustomer","");
-node4progress.setParameter("iInputParameters","character","input","mode=FromTo|cust-num-from=1100|cust-num-to=9999","");
-node4progress.setParameter("dsCustomer","dataset-handle","input-output","","examples/CustUpdDs-SchemaProvider.p");
+node4progress.setParameter("iInputParameters","character","input","mode=FromTo|cust-num-from=1000|cust-num-to=9999","");
+node4progress.setParameter("dsCustomer","dataset-handle","input-output","","Examples/CustUpdDs-SchemaProvider.p");
 node4progress.setParameter("oOutputPars","character","output","","");
 node4progress.setParameter("ErrMsg","character","output","","");
 //Invoke the appserver procedure
@@ -53,7 +53,7 @@ node4progress.invoke(function(err,result){
 	//Define appserver parameters 
 	node4progress.setParameter("Imode","character","input","Delete","");
 	node4progress.setParameter("iInputParameters","character","input","","");
-	node4progress.setParameter("dsCustomer","dataset-handle","input-output",dsCustomerCopy.writeJson(),"examples/CustUpdDs-SchemaProvider.p");
+	node4progress.setParameter("dsCustomer","dataset-handle","input-output",dsCustomerCopy.writeJson(),"Examples/CustUpdDs-SchemaProvider.p");
 	node4progress.setParameter("oOutputPars","character","output","","");
 	node4progress.setParameter("ErrMsg","character","output","","");
 	//Invoke appserver procedure with the callback procedure

@@ -15,7 +15,7 @@
 var conf = require("./config/config.json");
 var node4progress = require("node4progress")(conf);
 
-node4progress.getEmptyDataset("dsCustomer","examples/CustUpdDs-SchemaProvider.p",function(err,dsCustomer){
+node4progress.getEmptyDataset("dsCustomer","Examples/CustUpdDs-SchemaProvider.p",function(err,dsCustomer){
 	var ttCustomer=null;
 	var ttCustBuf=null;
 	if(err){
@@ -47,7 +47,7 @@ node4progress.getEmptyDataset("dsCustomer","examples/CustUpdDs-SchemaProvider.p"
 		//Define parameters for appserver procedure
 		node4progress.setParameter("Imode","character","input","ADD","");
 		node4progress.setParameter("iInputParameters","character","input","","");
-		node4progress.setParameter("dsOrder","dataset-handle","input-output",dsCustomer.writeJson(),"examples/CustUpdDs-SchemaProvider.p");
+		node4progress.setParameter("dsOrder","dataset-handle","input-output",dsCustomer.writeJson(),"Examples/CustUpdDs-SchemaProvider.p");
 		node4progress.setParameter("oOutputPars","character","output","","");
 		node4progress.setParameter("ErrMsg","character","output","","");
 		//Invoke appserver procedure

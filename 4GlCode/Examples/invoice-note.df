@@ -1,0 +1,57 @@
+ADD TABLE "Invoice-Note"
+  AREA "Info Area"
+  LABEL "Invoice event"
+  DUMP-NAME "invent-event"
+
+ADD FIELD "Invoice-Num" OF "Invoice-Note" AS integer 
+  FORMAT ">>>>>9"
+  INITIAL "0"
+  POSITION 2
+  MAX-WIDTH 4
+  VALEXP "invoice-num > 0"
+  VALMSG "Invoice number cannot be zero"
+  ORDER 10
+
+ADD FIELD "EventDtTm" OF "Invoice-Note" AS datetime 
+  FORMAT "99-99-99 HH:MM:SS.SSS"
+  INITIAL ?
+  LABEL "Event Data/Time"
+  POSITION 3
+  MAX-WIDTH 8
+  ORDER 20
+
+ADD FIELD "EventDtTm-TZ" OF "Invoice-Note" AS datetime-tz 
+  FORMAT "99/99/99 HH:MM:SS.SSS+HH:MM"
+  INITIAL ?
+  LABEL "Date/Time TZ"
+  POSITION 4
+  MAX-WIDTH 12
+  ORDER 30
+
+ADD FIELD "Note" OF "Invoice-Note" AS character 
+  FORMAT "x(60)"
+  INITIAL ""
+  LABEL "Note"
+  POSITION 5
+  MAX-WIDTH 120
+  ORDER 40
+
+ADD FIELD "SeqNr" OF "Invoice-Note" AS integer 
+  FORMAT "->,>>>,>>9"
+  INITIAL "0"
+  LABEL "Seq #"
+  POSITION 6
+  MAX-WIDTH 4
+  ORDER 50
+
+ADD INDEX "pr_u" ON "Invoice-Note" 
+  AREA "Info Area"
+  PRIMARY
+  INDEX-FIELD "Invoice-Num" ASCENDING 
+  INDEX-FIELD "SeqNr" ASCENDING 
+
+.
+PSC
+cpstream=ISO8859-1
+.
+0000001092

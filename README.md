@@ -212,7 +212,7 @@ logic on the appserver:
     -   Using the dynamic appserver call approach you any appserver
         procedure with any input/output signature can be called
 
-## *4.1 Using the handler approach* 
+## *4.1 Using the handler approach*
 
 A handler is an appserver procedure with an input/output signature that
 looks as follows:
@@ -470,8 +470,8 @@ The node4progress dataset architecture comes with the following objects,
 attributes and methods.
 
 +-----------------------+-----------------------+-----------------------+-----------------------+
-| **Object**            | **Methods/Attributes* | **Purpose**           | **Input Parameters**  |
-|                       | *                     |                       |                       |
+| **Object**            | \*\*Methods/Attribute | **Purpose**           | **Input Parameters**  |
+|                       | s                     |                       |                       |
 +-----------------------+-----------------------+-----------------------+-----------------------+
 | Dataset               | \$                    | Returns a temp-table  | -\>TableName          |
 |                       |                       | object: Example:      |                       |
@@ -583,11 +583,14 @@ attributes and methods.
 ## 7.2 Installing and running the node4progress dataset examples
 
 A set of examples is provided that show how to use the node4progress
-dataset object:
+dataset object.
+
+Node4Progress comes with configuration that allows for these examples to
+be run against an appserver running on an Amazon clould computer.
 
 -   How to navigate the data in a dataset object
 
-    -   testDatasetCustomer.js, testDatasetOrder.js
+    -   testDatasetCustomer.js, testDatasetOrder.js, testDatasetInvoice
 
 -   Using the CallHandler approach
 
@@ -612,11 +615,17 @@ To run this examples execute the following steps:
     node4progress as explained in paragraph 3 "Installation and
     configuration"
 
--   Create an appserver that connects to the sports database (not the
-    sports2000 database)
+-   Optionally create an appserver that connects to the sports database
+    (not the sports2000 database)
 
     -   The examples are coded against the sports database and will not
         works against the sports2000 database
+
+-   Alternativlely you can run the examples against an appserver in the
+    cloud on IP address
+
+    -   The connection parameters are defined in the
+        ./config/config.json file
 
 -   Open up a DOS or a UNIX shell and type in the following command
 
@@ -628,6 +637,23 @@ To run this examples execute the following steps:
 
             -   export NODE\_PATH=/var/tmp/node\_modules
 
+-   Edit the following configuration file
+
+    -   node\_modules/node4progress/Examples/config/config.json
+
+        -   Configure the following parameters to point to your
+            appserver
+
+            -   AppserverUrl
+
+            -   AppserverUserName
+
+            -   AppserverUserPassword
+
+            -   AppserverSessionModel
+
+                -   For more details see paragraph 3
+
 -   Change directory to the examples directory
 
     -   Again assuming that you have installed node4progress in the
@@ -637,7 +663,7 @@ To run this examples execute the following steps:
 
 -   Now you can execute the examples from the command line as follows
 
-    -    To execute testDatasetCustomer.js
+    -   To execute testDatasetCustomer.js
 
         -   node testDatasetCustomer.js
 

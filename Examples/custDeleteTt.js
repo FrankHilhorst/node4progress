@@ -25,8 +25,8 @@ var node4progress = require("node4progress")(conf);
 node4progress.setAppsvrProc("Examples/CustUpdTt.p","",false,true);
 // Define parameters for appserver procedure to call
 node4progress.setParameter("Imode","character","input","GetCustomer","");
-node4progress.setParameter("iInputParameters","character","input","mode=FromTo|cust-num-from=1100|cust-num-to=9999","");
-node4progress.setParameter("ttCustomer","table-handle","input-output","","examples/CustUpdTt-SchemaProvider.p");
+node4progress.setParameter("iInputParameters","character","input","mode=FromTo|cust-num-from=1000|cust-num-to=9999","");
+node4progress.setParameter("ttCustomer","table-handle","input-output","","Examples/CustUpdTt-SchemaProvider.p");
 node4progress.setParameter("oOutputPars","character","output","","");
 node4progress.setParameter("ErrMsg","character","output","","");
 // Invoke Appserver procedure
@@ -52,7 +52,7 @@ node4progress.invoke(function(err,result){
 	// Define parameters for appserver procedure
 	node4progress.setParameter("Imode","character","input","Delete","");
 	node4progress.setParameter("iInputParameters","character","input","","");
-	node4progress.setParameter("ttCustomer","table-handle","input-output",ttCustomerCopy.writeJson(),"examples/CustUpdTt-SchemaProvider.p");
+	node4progress.setParameter("ttCustomer","table-handle","input-output",ttCustomerCopy.writeJson(),"Examples/CustUpdTt-SchemaProvider.p");
 	node4progress.setParameter("oOutputPars","character","output","","");
 	node4progress.setParameter("ErrMsg","character","output","","");
 	// Invoke appserver procedure

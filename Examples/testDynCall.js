@@ -4,7 +4,7 @@
 var conf = require("./config/config.json");
 var node4progress = require("node4progress")(conf);
 
-node4progress.setAppsvrProc("handlers/CustomerHandler.p","",false,true);
+node4progress.setAppsvrProc("Examples/CustomerHandler.p","",false,true);
 node4progress.setParameter("InputPars","longchar","input","NumCustomersToPull=5&batchNum=2","");
 node4progress.setParameter("OutputPars","character","output","","");
 node4progress.setParameter("dsCustomer","dataset-handle","output","","");
@@ -21,7 +21,7 @@ node4progress.appProc().execute(function(err,result){
 	}
 });
 
-node4progress.setAppsvrProc("handlers/OrderHandler.p","",false,true);
+node4progress.setAppsvrProc("Examples/OrderHandler.p","",false,true);
 node4progress.setParameter("InputPars","longchar","input","NumOrdersToPull=2","");
 node4progress.setParameter("OutputPars","character","output","","");
 node4progress.setParameter("dsOrder","dataset-handle","output","","");

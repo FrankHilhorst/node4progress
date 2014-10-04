@@ -13,7 +13,7 @@
 var conf = require("./config/config.json");
 var node4progress = require("node4progress")(conf);
 
-node4progress.getEmptyTempTable("ttCustomer","examples/CustUpdTt-SchemaProvider.p",function(err,ttCustomer){
+node4progress.getEmptyTempTable("ttCustomer","Examples/CustUpdTt-SchemaProvider.p",function(err,ttCustomer){
 	var ttCustBuf=null;
 	if(err){
 		console.log("ERROR->"+err);
@@ -42,7 +42,7 @@ node4progress.getEmptyTempTable("ttCustomer","examples/CustUpdTt-SchemaProvider.
 		//Define parameters for appserver procedure to call
 		node4progress.setParameter("Imode","character","input","ADD","");
 		node4progress.setParameter("iInputParameters","character","input","","");
-		node4progress.setParameter("ttCustomer","table-handle","input-output",ttCustomer.writeJson(),"examples/CustUpdTt-SchemaProvider.p");
+		node4progress.setParameter("ttCustomer","table-handle","input-output",ttCustomer.writeJson(),"Examples/CustUpdTt-SchemaProvider.p");
 		node4progress.setParameter("oOutputPars","character","output","","");
 		node4progress.setParameter("ErrMsg","character","output","","");
 		

@@ -1,6 +1,6 @@
 {
   "name": "node4progress",
-  "version": "0.1.3",
+  "version": "0.1.6",
   "description": "Connector to Progress Appserver",
   "author": "Frank Hilhorst - Progressive Consulting Inc.",
   "main": "index.js",
@@ -9,7 +9,7 @@
   "dependencies": {
     "numeral": "1.5.x",
     "debug": "2.x.x",
-    "moment": "1.4.x",
+    "moment": ">=2.8.3",
     "http": "*"
   },
   "engines": {

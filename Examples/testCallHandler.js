@@ -14,7 +14,7 @@ var conf = require("./config/config.json");
 // Instantiate node4progress
 var node4progress = require("node4progress")(conf);
 //Define handler to call
-var handler="handlers/CustomerHandler.p";
+var handler="Examples/CustomerHandler.p";
 // Define Input parameters for handler 
 var inputPars = 'NumCustomersToPull=5';
 //Invoke the handler
